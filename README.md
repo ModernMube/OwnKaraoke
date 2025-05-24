@@ -381,9 +381,6 @@ private const double OPACITY_ANIMATION_SPEED = 0.00085; // opacity per milliseco
 - Metadata lines start with `[ar:`, `[ti:`, `[al:`, etc.
 - Empty lines and metadata lines are automatically skipped
 
-## License
-
-Include your license information here.
 
 ## Support My Work
 
