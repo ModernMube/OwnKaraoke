@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AvaloniaKaraoke", "AvaloniaKaraoke\AvaloniaKaraoke.csproj", "{6572E972-BD95-49DD-9D95-694C9C2F7B8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwnKaraoke", "OwnKaraoke\OwnKaraoke.csproj", "{80315147-57E7-4CFA-91D9-5129A2BF7DDB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6572E972-BD95-49DD-9D95-694C9C2F7B8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6572E972-BD95-49DD-9D95-694C9C2F7B8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6572E972-BD95-49DD-9D95-694C9C2F7B8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6572E972-BD95-49DD-9D95-694C9C2F7B8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80315147-57E7-4CFA-91D9-5129A2BF7DDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80315147-57E7-4CFA-91D9-5129A2BF7DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80315147-57E7-4CFA-91D9-5129A2BF7DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80315147-57E7-4CFA-91D9-5129A2BF7DDB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {11507200-000A-4D2D-AC70-854A8913440E}
+	EndGlobalSection
+EndGlobal
