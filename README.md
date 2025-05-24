@@ -21,8 +21,8 @@ Add the `KaraokeDisplay` control to your Avalonia project by including the sourc
 
 ```xml
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:karaoke="clr-namespace:AvaloniaKaraoke">
-    <karaoke:KaraokeDisplay x:Name="KaraokeControl"
+        xmlns:karaoke="clr-namespace:OwnKaraoke;assembly=OwnKaraoke">
+    <karaoke:OwnKaraokeDisplay x:Name="KaraokeControl"
                            VisibleLinesCount="3"
                            FontSize="24"
                            FontFamily="Arial"
