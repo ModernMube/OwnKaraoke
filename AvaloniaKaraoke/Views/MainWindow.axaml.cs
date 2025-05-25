@@ -297,31 +297,48 @@ namespace AvaloniaKaraoke.Views
         {
             if (_isPlaying)
             {
-                var elapsed = DateTime.Now - _startTime;
+                var realElapsed = DateTime.Now - _startTime;
 
-                // Teljes időtartam kiszámítása: utolsó elem időpontja + annak időtartama
                 if (KaraokeLyrics.Count > 0)
                 {
-                    var lastElement = KaraokeLyrics.Last();
-                    double lastElementDuration = 2000; // Default időtartam az utolsó elemhez
+                    var currentTempo = KaraokeControl?.Tempo ?? 0.0;
+                    var tempoMultiplier = 1.0 + currentTempo;
 
-                    // Ha van még egy elem utána, számítsuk ki az időtartamát
+                    var lastElement = KaraokeLyrics.Last();
+                    double lastElementDuration = 1000;
+
                     if (KaraokeLyrics.Count > 1)
                     {
                         var secondLastElement = KaraokeLyrics[KaraokeLyrics.Count - 2];
-                        double timeDiff = lastElement.StartTimeMs - secondLastElement.StartTimeMs;
-                        lastElementDuration = Math.Min(timeDiff * 0.75, 1000);
+                        var timeDifference = lastElement.StartTimeMs - secondLastElement.StartTimeMs;
+                        lastElementDuration = Math.Min(timeDifference * 0.75, 1000);
                     }
 
-                    var totalDuration = lastElement.StartTimeMs + lastElementDuration;
-                    var progress = Math.Min(100, (elapsed.TotalMilliseconds / totalDuration) * 100);
+                    var originalTotalDuration = lastElement.StartTimeMs + lastElementDuration;
+                    var karaokeElapsedTime = realElapsed.TotalMilliseconds * tempoMultiplier;
+                    var progress = Math.Min(100, (karaokeElapsedTime / originalTotalDuration) * 100);
 
-                    ProgressText.Text = $"Progress: {progress:F1}% | Time: {elapsed:mm\\:ss}";
+                    var estimatedRealTotalDuration = originalTotalDuration / tempoMultiplier;
+                    var adjustedTimeSpan = TimeSpan.FromMilliseconds(estimatedRealTotalDuration);
 
-                    if (progress >= 100)
+                    string tempoInfo = "";
+                    if (Math.Abs(currentTempo) > 0.05)
                     {
-                        StopButton_Click( sender, new RoutedEventArgs());
-                        StatusText.Text = "Song complete! 🎉";
+                        var tempoPercentage = currentTempo * 100;
+                        var sign = tempoPercentage >= 0 ? "+" : "";
+                        tempoInfo = $" | Tempó: {sign}{tempoPercentage:F0}%";
+                    }
+
+                    ProgressText.Text = $"Haladás: {progress:F1}% | Idő: {realElapsed:mm\\:ss}/{adjustedTimeSpan:mm\\:ss}{tempoInfo}";
+
+                    if (progress > 97) 
+                    {
+                        var timeToWait = originalTotalDuration * 0.02; 
+                        if (karaokeElapsedTime >= originalTotalDuration + timeToWait)
+                        {
+                            StopButton_Click(sender, new RoutedEventArgs());
+                            StatusText.Text = "Dal befejezve! 🎉";
+                        }
                     }
                 }
             }
