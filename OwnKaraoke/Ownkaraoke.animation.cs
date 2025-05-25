@@ -1,10 +1,5 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Threading;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OwnKaraoke
 {
@@ -150,15 +145,29 @@ namespace OwnKaraoke
         }
 
         /// <summary>
-        /// Updates the karaoke highlighting animation logic with tempo support.
+        /// Updates the karaoke animation with simplified logic.
         /// </summary>
-        /// <param name="elapsedMs">The elapsed time in milliseconds since the last frame.</param>
+        /// <param name="elapsedMs">Elapsed time since last frame.</param>
         private void UpdateAnimationLogic(double elapsedMs)
         {
             if (_currentGlobalSyllableIndex >= _itemsSourceInternal.Count)
+            {
+                if (Status != KaraokeStatus.Finished)
+                {
+                    Status = KaraokeStatus.Finished;
+                    OriginalPosition = OriginalDuration;
+                    Position = Duration;
+                }
                 return;
+            }
 
             var syllableAdvanced = false;
+
+            _timeSinceLastSeekMs += elapsedMs;
+            _originalElapsedTimeMs = _lastSeekPositionMs + _timeSinceLastSeekMs;
+
+            OriginalPosition = _originalElapsedTimeMs;
+            Position = ApplyTempoToTime(_originalElapsedTimeMs);
 
             var tempoAdjustedElapsedMs = ApplyTempoToElapsedTime(elapsedMs);
             var totalElapsedTime = _timeElapsedInCurrentSyllableMs + tempoAdjustedElapsedMs;
@@ -166,29 +175,16 @@ namespace OwnKaraoke
             while (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
             {
                 var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
-
                 var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
 
-                if (totalElapsedTime >= tempoAdjustedStartTime)
+                if (totalElapsedTime < tempoAdjustedStartTime)
                 {
                     break;
                 }
-                else
-                {
-                    _timeElapsedInCurrentSyllableMs = totalElapsedTime;
-                    return;
-                }
-            }
 
-            if (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
-            {
-                var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
-
+                // Check if we should advance to next syllable
                 var tempoAdjustedDuration = ApplyTempoToTime(CalculateSyllableDuration(_currentGlobalSyllableIndex));
-                var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
                 var timeIntoSyllable = totalElapsedTime - tempoAdjustedStartTime;
-
-                _timeElapsedInCurrentSyllableMs = totalElapsedTime;
 
                 if (timeIntoSyllable >= tempoAdjustedDuration)
                 {
@@ -197,18 +193,25 @@ namespace OwnKaraoke
 
                     if (_currentGlobalSyllableIndex >= _itemsSourceInternal.Count)
                     {
+                        Status = KaraokeStatus.Finished;
+                        OriginalPosition = OriginalDuration;
+                        Position = Duration;
                         StopAnimation();
                         return;
                     }
                 }
-            }
-            else
-            {
-                _timeElapsedInCurrentSyllableMs = totalElapsedTime;
+                else
+                {
+                    break;
+                }
             }
 
+            _timeElapsedInCurrentSyllableMs = totalElapsedTime;
+
             if (syllableAdvanced && _displayLines.Count > 0)
+            {
                 CheckForLineScroll();
+            }
         }
 
         #endregion

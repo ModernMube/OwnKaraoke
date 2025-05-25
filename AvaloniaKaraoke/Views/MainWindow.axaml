@@ -11,28 +11,28 @@
         Width="1100" Height="700"
         WindowStartupLocation="CenterScreen">
 
-    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="20">
-        
-        <!-- Fejléc -->
-        <TextBlock Grid.Row="0" 
-                   Text="🎤 Karaoke Demo Application" 
-                   FontSize="24" 
-                   FontWeight="Bold" 
-                   HorizontalAlignment="Center" 
+	<Grid RowDefinitions="Auto,*,Auto,Auto,Auto" Margin="20">
+
+		<!-- Header -->
+		<TextBlock Grid.Row="0"
+                   Text="🎤 Karaoke Demo Application"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
                    Margin="0,0,0,20"/>
 
-        <!-- Karaoke Display -->
-        <Border Grid.Row="1" 
-                BorderBrush="DarkBlue" 
-                BorderThickness="2" 
-                CornerRadius="10" 
-                Background="Black" 
+		<!-- Karaoke Display -->
+		<Border Grid.Row="1"
+                BorderBrush="DarkBlue"
+                BorderThickness="2"
+                CornerRadius="10"
+                Background="Black"
                 Padding="20"
                 MinHeight="300">
-            
-            <local:OwnKaraokeDisplay x:Name="KaraokeControl"
+
+			<local:OwnKaraokeDisplay x:Name="KaraokeControl"
                                   ItemsSource="{Binding KaraokeLyrics}"
-								  Tempo="{Binding #TempoSlider.Value}"
+                                  Tempo="{Binding #TempoSlider.Value}"
                                   VisibleLinesCount="4"
                                   FontSize="48"
                                   FontFamily="Arial"
@@ -41,84 +41,108 @@
                                   HighlightBrush="#FF10A0FF"
                                   AlreadySungBrush="#FF10A0FF"
                                   TextAlignment="Center"/>
-        </Border>
+		</Border>
 
-        <!-- Vezérlők -->
-        <StackPanel Grid.Row="2" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center" 
-                    Margin="0,20,0,0"
+		<!-- Progress Bar -->
+		<Grid Grid.Row="2" Margin="0,15,0,0" ColumnDefinitions="Auto,*,Auto">
+			<TextBlock Grid.Column="0"
+                       Name="CurrentTimeText"
+                       Text="00:00"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Margin="0,0,10,0"/>
+
+			<ProgressBar Grid.Column="1"
+                         Name="ProgressBar"
+                         Height="8"
+                         Background="LightGray"
+                         Foreground="DarkBlue"
+                         VerticalAlignment="Center"
+                         Margin="0,0,10,0"/>
+
+			<TextBlock Grid.Column="2"
+                       Name="TotalTimeText"
+                       Text="00:00"
+                       FontSize="12"
+                       VerticalAlignment="Center"/>
+		</Grid>
+
+		<!-- Controls -->
+		<StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Margin="0,15,0,0"
                     Spacing="15">
-            
-            <Button Name="StartButton" 
-                    Content="▶️ Play" 
-                    Padding="15,10" 
+
+			<Button Name="PlayPauseButton"
+                    Content="▶️ Play"
+                    Padding="15,10"
                     FontSize="16"
                     Background="Green"
                     Foreground="White"
-                    Click="StartButton_Click"/>
-            
-            <Button Name="StopButton" 
-                    Content="⏹️ Stop" 
-                    Padding="15,10" 
+                    Click="PlayPauseButton_Click"/>
+
+			<Button Name="StopButton"
+                    Content="⏹️ Stop"
+                    Padding="15,10"
                     FontSize="16"
                     Background="Red"
                     Foreground="White"
                     Click="StopButton_Click"/>
-            
-            <Button Name="ResetButton" 
-                    Content="🔄 Restart" 
-                    Padding="15,10" 
+
+			<Button Name="ResetButton"
+                    Content="🔄 Restart"
+                    Padding="15,10"
                     FontSize="16"
                     Background="Orange"
                     Foreground="White"
                     Click="ResetButton_Click"/>
-            
-            <ComboBox Name="SongSelector"
+
+			<ComboBox Name="SongSelector"
                       PlaceholderText="Choose a song..."
                       MinWidth="200"
                       FontSize="14"
                       SelectionChanged="SongSelector_SelectionChanged"/>
 
 			<StackPanel Orientation="Horizontal" Margin="10" VerticalAlignment="Top">
-				
-				<TextBlock Text="Tempo:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-				
-				<Slider Name="TempoSlider"
-						Minimum="-2.0"
-						Maximum="2.0"
-						Value="0.0"
-						Width="200"
-						TickFrequency="0.01"
-						IsSnapToTickEnabled="True"
-						VerticalAlignment="Center"/>
-				<TextBlock Text="{Binding #TempoSlider.Value, StringFormat={}{0:F2}}"
-						   VerticalAlignment="Center"
-						   Margin="10,0,0,0"/>
-				<TextBlock Name="TempoPercentage"
-						   VerticalAlignment="Center"
-						   Margin="10,0,0,0"/>
-			</StackPanel>
-			
-        </StackPanel>
 
-        <!-- Státusz információk -->
-        <StackPanel Grid.Row="3" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Center" 
+				<TextBlock Text="Tempo:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+				<Slider Name="TempoSlider"
+                        Minimum="-2.0"
+                        Maximum="2.0"
+                        Value="0.0"
+                        Width="200"
+                        TickFrequency="0.01"
+                        IsSnapToTickEnabled="True"
+                        VerticalAlignment="Center"/>
+				<TextBlock Text="{Binding #TempoSlider.Value, StringFormat={}{0:F2}}"
+                           VerticalAlignment="Center"
+                           Margin="10,0,0,0"/>
+				<TextBlock Name="TempoPercentage"
+                           VerticalAlignment="Center"
+                           Margin="10,0,0,0"/>
+			</StackPanel>
+
+		</StackPanel>
+
+		<!-- Status Information -->
+		<StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
                     Margin="0,15,0,0"
                     Spacing="20">
-            
-            <TextBlock Name="StatusText" 
-                       Text="Ready to launch" 
-                       FontSize="14" 
-                       Foreground="DarkGreen"/>
-            
-            <TextBlock Name="ProgressText" 
-                       Text="" 
-                       FontSize="14" 
-                       Foreground="DarkBlue"/>
-        </StackPanel>
 
-    </Grid>
+			<TextBlock Name="StatusText"
+                       Text="Ready to launch"
+                       FontSize="14"
+                       Foreground="DarkGreen"/>
+
+			<TextBlock Name="DebugInfoText"
+                       Text=""
+                       FontSize="12"
+                       Foreground="Gray"/>
+		</StackPanel>
+
+	</Grid>
 </Window>

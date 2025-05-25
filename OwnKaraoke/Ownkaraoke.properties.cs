@@ -189,5 +189,84 @@ namespace OwnKaraoke
         #endregion
 
         #endregion
+
+        #region Status and Position Properties
+
+        /// <summary>
+        /// Defines the Status property.
+        /// </summary>
+        public static readonly StyledProperty<KaraokeStatus> StatusProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, KaraokeStatus>(nameof(Status), KaraokeStatus.Idle);
+
+        /// <summary>
+        /// Defines the Position property.
+        /// </summary>
+        public static readonly StyledProperty<double> PositionProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(Position), 0.0);
+
+        /// <summary>
+        /// Defines the Duration property.
+        /// </summary>
+        public static readonly StyledProperty<double> DurationProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(Duration), 0.0);
+
+        /// <summary>
+        /// Defines the OriginalPosition property.
+        /// </summary>
+        public static readonly StyledProperty<double> OriginalPositionProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(OriginalPosition), 0.0);
+
+        /// <summary>
+        /// Defines the OriginalDuration property.
+        /// </summary>
+        public static readonly StyledProperty<double> OriginalDurationProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(OriginalDuration), 0.0);
+
+        /// <summary>
+        /// Gets the current status of the karaoke control.
+        /// </summary>
+        public KaraokeStatus Status
+        {
+            get => GetValue(StatusProperty);
+            private set => SetValue(StatusProperty, value);
+        }
+
+        /// <summary>
+        /// Gets the current playback position in milliseconds (tempo-adjusted).
+        /// </summary>
+        public double Position
+        {
+            get => GetValue(PositionProperty);
+            private set => SetValue(PositionProperty, value);
+        }
+
+        /// <summary>
+        /// Gets the total duration of the karaoke content in milliseconds (tempo-adjusted).
+        /// </summary>
+        public double Duration
+        {
+            get => GetValue(DurationProperty);
+            private set => SetValue(DurationProperty, value);
+        }
+
+        /// <summary>
+        /// Gets the current playback position in original milliseconds (without tempo adjustment).
+        /// </summary>
+        public double OriginalPosition
+        {
+            get => GetValue(OriginalPositionProperty);
+            private set => SetValue(OriginalPositionProperty, value);
+        }
+
+        /// <summary>
+        /// Gets the total duration in original milliseconds (without tempo adjustment).
+        /// </summary>
+        public double OriginalDuration
+        {
+            get => GetValue(OriginalDurationProperty);
+            private set => SetValue(OriginalDurationProperty, value);
+        }
+
+        #endregion
     }
 }

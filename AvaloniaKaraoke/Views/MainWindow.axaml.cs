@@ -5,7 +5,6 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using OwnKaraoke;
-using OwnKaraoke.Lyricfile;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,8 +19,9 @@ namespace AvaloniaKaraoke.Views
     {
         private ObservableCollection<TimedTextElement> _karaokeLyrics = new();
         private DispatcherTimer? _statusTimer;
-        private DateTime _startTime;
-        private bool _isPlaying = false;
+        private IDisposable? _statusSubscription;
+        private IDisposable? _positionSubscription;
+        private IDisposable? _durationSubscription;
 
         public ObservableCollection<TimedTextElement> KaraokeLyrics
         {
@@ -35,15 +35,15 @@ namespace AvaloniaKaraoke.Views
 
         public MainWindow()
         {
-            
-            InitializeComponent();            
-
-            DataContext = this;  
+            InitializeComponent();
+            DataContext = this;
 
             InitializeSongs();
             SetupStatusTimer();
+            SetupKaraokeSubscriptions();
 
             TempoSlider.PropertyChanged += OnTempoSliderChanged;
+            ProgressBar.PointerPressed += ProgressBar_PointerPressed;
 
             UpdateTempoPercentage(0.0);
         }
@@ -53,7 +53,7 @@ namespace AvaloniaKaraoke.Views
             var songs = new List<string>
             {
                 "Hallelujah - Leonard Cohen",
-                "Bohemian Rhapsody - Queen", 
+                "Bohemian Rhapsody - Queen",
                 "Hotel California - Eagles",
                 "Load lyric file"
             };
@@ -77,65 +77,168 @@ namespace AvaloniaKaraoke.Views
             {
                 Interval = TimeSpan.FromMilliseconds(100)
             };
-            _statusTimer.Tick += UpdateStatus;
+            _statusTimer.Tick += UpdateUI;
+            _statusTimer.Start();
         }
 
-        private void StartButton_Click(object sender, RoutedEventArgs e)
+        private void SetupKaraokeSubscriptions()
         {
-            if (KaraokeLyrics.Any())
-            { 
-                KaraokeControl.Start();
-                _isPlaying = true;
-                _startTime = DateTime.Now;
-                _statusTimer?.Start();
-                
-                StatusText.Text = "Playing...";
-                StartButton.IsEnabled = false;
-                StopButton.IsEnabled = true;
+            // Subscribe to status changes
+            _statusSubscription = KaraokeControl.GetObservable(OwnKaraokeDisplay.StatusProperty)
+                .Subscribe(OnKaraokeStatusChanged);
+
+            // Subscribe to position changes
+            _positionSubscription = KaraokeControl.GetObservable(OwnKaraokeDisplay.PositionProperty)
+                .Subscribe(OnPositionChanged);
+
+            // Subscribe to duration changes
+            _durationSubscription = KaraokeControl.GetObservable(OwnKaraokeDisplay.DurationProperty)
+                .Subscribe(OnDurationChanged);
+        }
+
+        private void OnKaraokeStatusChanged(KaraokeStatus status)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                UpdateControlsForStatus(status);
+                StatusText.Text = status switch
+                {
+                    KaraokeStatus.Idle => "Ready to launch",
+                    KaraokeStatus.Playing => "Playing...",
+                    KaraokeStatus.Paused => "Paused",
+                    KaraokeStatus.Finished => "Song finished! 🎉",
+                    _ => "Unknown status"
+                };
+            });
+        }
+
+        private void OnPositionChanged(double position)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var timeSpan = TimeSpan.FromMilliseconds(position);
+                CurrentTimeText.Text = $"{timeSpan:mm\\:ss}";
+
+                if (KaraokeControl.Duration > 0)
+                {
+                    ProgressBar.Value = (position / KaraokeControl.Duration) * 100;
+                }
+            });
+        }
+
+        private void OnDurationChanged(double duration)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var timeSpan = TimeSpan.FromMilliseconds(duration);
+                TotalTimeText.Text = $"{timeSpan:mm\\:ss}";
+                ProgressBar.Maximum = 100;
+            });
+        }
+
+        private void UpdateControlsForStatus(KaraokeStatus status)
+        {
+            switch (status)
+            {
+                case KaraokeStatus.Idle:
+                    PlayPauseButton.Content = "▶️ Play";
+                    PlayPauseButton.Background = Avalonia.Media.Brushes.Green;
+                    PlayPauseButton.IsEnabled = KaraokeLyrics.Any();
+                    StopButton.IsEnabled = false;
+                    break;
+
+                case KaraokeStatus.Playing:
+                    PlayPauseButton.Content = "⏸️ Pause";
+                    PlayPauseButton.Background = Avalonia.Media.Brushes.Orange;
+                    PlayPauseButton.IsEnabled = true;
+                    StopButton.IsEnabled = true;
+                    break;
+
+                case KaraokeStatus.Paused:
+                    PlayPauseButton.Content = "▶️ Resume";
+                    PlayPauseButton.Background = Avalonia.Media.Brushes.Green;
+                    PlayPauseButton.IsEnabled = true;
+                    StopButton.IsEnabled = true;
+                    break;
+
+                case KaraokeStatus.Finished:
+                    PlayPauseButton.Content = "▶️ Play";
+                    PlayPauseButton.Background = Avalonia.Media.Brushes.Green;
+                    PlayPauseButton.IsEnabled = true;
+                    StopButton.IsEnabled = false;
+                    break;
             }
-            else
+        }
+
+        private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!KaraokeLyrics.Any())
             {
                 StatusText.Text = "Please choose a song!";
+                return;
+            }
+
+            switch (KaraokeControl.Status)
+            {
+                case KaraokeStatus.Idle:
+                case KaraokeStatus.Finished:
+                    KaraokeControl.Start();
+                    break;
+
+                case KaraokeStatus.Playing:
+                    KaraokeControl.Pause();
+                    break;
+
+                case KaraokeStatus.Paused:
+                    KaraokeControl.Resume();
+                    break;
             }
         }
 
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
-            _isPlaying = false;
-            _statusTimer?.Stop();
-            
-            StatusText.Text = "Stopped";
-            ProgressText.Text = "";
-            StartButton.IsEnabled = true;
-            StopButton.IsEnabled = false;
-            KaraokeControl?.Stop();
+            KaraokeControl.Stop();
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            StopButton_Click(sender, e);
-            
+            KaraokeControl.Stop();
+
             if (KaraokeLyrics.Any())
             {
                 var currentSong = SongSelector.SelectedItem?.ToString();
                 if (currentSong is not null)
-                    LoadSongLyrics(currentSong);
+                {
+                    _ = LoadSongLyrics(currentSong);
+                }
             }
-            
-            StatusText.Text = "Restarted - Ready to start";
+        }
+
+        private void ProgressBar_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e)
+        {
+            if (KaraokeControl.Duration > 0 && sender is ProgressBar progressBar)
+            {
+                var position = e.GetPosition(progressBar);
+                var percentage = position.X / progressBar.Bounds.Width;
+                var targetPosition = percentage * KaraokeControl.OriginalDuration;
+
+                KaraokeControl.Seek(targetPosition);
+            }
         }
 
         private void SongSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (SongSelector.SelectedItem is string selectedSong)
             {
-                LoadSongLyrics(selectedSong);
+                _ = LoadSongLyrics(selectedSong);
                 StatusText.Text = $"Song loaded: {selectedSong}";
-                StartButton.IsEnabled = true;
-                
-                if (_isPlaying)
+
+                PlayPauseButton.IsEnabled = true;
+                StopButton.IsEnabled = true;
+
+                if (KaraokeControl.Status == KaraokeStatus.Playing)
                 {
-                    StopButton_Click(sender, new RoutedEventArgs());
+                    KaraokeControl.Stop();
                 }
             }
         }
@@ -275,85 +378,60 @@ namespace AvaloniaKaraoke.Views
         {
             IReadOnlyList<IStorageFile> result = await this.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
             {
-                Title = "Select audio file",
-                AllowMultiple = true,
+                Title = "Select lyric file",
+                AllowMultiple = false,
                 FileTypeFilter = new FilePickerFileType[] { _lyricFiles }
             });
 
-            if(result.Count > 0)
+            if (result.Count > 0)
             {
-                if (result[0].TryGetLocalPath() != null)
-                    return OwnKaraoke.Lyricfile.OwnKaraokeLyric.ParseFromFile(result[0].TryGetLocalPath()).ToList();
-                else
-                    return new List<TimedTextElement>();
+                var localPath = result[0].TryGetLocalPath();
+                if (localPath != null)
+                    return OwnKaraoke.Lyricfile.OwnKaraokeLyric.ParseFromFile(localPath).ToList();
+            }
+
+            return new List<TimedTextElement>();
+        }
+
+        private void UpdateUI(object? sender, EventArgs e)
+        {
+            // Update debug information
+            if (KaraokeControl.Status != KaraokeStatus.Idle)
+            {
+                var currentTempo = KaraokeControl.Tempo;
+                var tempoPercentage = currentTempo * 100;
+                var sign = tempoPercentage >= 0 ? "+" : "";
+
+                var debugInfo = $"Status: {KaraokeControl.Status}";
+                if (Math.Abs(currentTempo) > 0.01)
+                {
+                    debugInfo += $" | Tempo: {sign}{tempoPercentage:F0}%";
+                }
+
+                debugInfo += $" | Pos: {KaraokeControl.Position:F0}ms/{KaraokeControl.Duration:F0}ms";
+                debugInfo += $" | Orig: {KaraokeControl.OriginalPosition:F0}ms/{KaraokeControl.OriginalDuration:F0}ms";
+
+                DebugInfoText.Text = debugInfo;
             }
             else
             {
-                return new List<TimedTextElement>();
+                DebugInfoText.Text = "";
             }
         }
 
-        private void UpdateStatus(object? sender, EventArgs e)
-        {
-            if (_isPlaying)
-            {
-                var realElapsed = DateTime.Now - _startTime;
-
-                if (KaraokeLyrics.Count > 0)
-                {
-                    var currentTempo = KaraokeControl?.Tempo ?? 0.0;
-                    var tempoMultiplier = 1.0 + currentTempo;
-
-                    var lastElement = KaraokeLyrics.Last();
-                    double lastElementDuration = 1000;
-
-                    if (KaraokeLyrics.Count > 1)
-                    {
-                        var secondLastElement = KaraokeLyrics[KaraokeLyrics.Count - 2];
-                        var timeDifference = lastElement.StartTimeMs - secondLastElement.StartTimeMs;
-                        lastElementDuration = Math.Min(timeDifference * 0.75, 1000);
-                    }
-
-                    var originalTotalDuration = lastElement.StartTimeMs + lastElementDuration;
-                    var karaokeElapsedTime = realElapsed.TotalMilliseconds * tempoMultiplier;
-                    var progress = Math.Min(100, (karaokeElapsedTime / originalTotalDuration) * 100);
-
-                    var estimatedRealTotalDuration = originalTotalDuration / tempoMultiplier;
-                    var adjustedTimeSpan = TimeSpan.FromMilliseconds(estimatedRealTotalDuration);
-
-                    string tempoInfo = "";
-                    if (Math.Abs(currentTempo) > 0.05)
-                    {
-                        var tempoPercentage = currentTempo * 100;
-                        var sign = tempoPercentage >= 0 ? "+" : "";
-                        tempoInfo = $" | Tempo: {sign}{tempoPercentage:F0}%";
-                    }
-
-                    ProgressText.Text = $"Progress: {progress:F1}% | Time: {realElapsed:mm\\:ss}/{adjustedTimeSpan:mm\\:ss}{tempoInfo}";
-
-                    if (progress > 97) 
-                    {
-                        var timeToWait = originalTotalDuration * 0.02; 
-                        if (karaokeElapsedTime >= originalTotalDuration + timeToWait)
-                        {
-                            StopButton_Click(sender, new RoutedEventArgs());
-                            StatusText.Text = "Song finished! 🎉";
-                        }
-                    }
-                }
-            }
-        }
-
-        public event PropertyChangedEventHandler? Property_Changed;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
-            Property_Changed?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         protected override void OnClosed(EventArgs e)
         {
             _statusTimer?.Stop();
+            _statusSubscription?.Dispose();
+            _positionSubscription?.Dispose();
+            _durationSubscription?.Dispose();
             base.OnClosed(e);
         }
 

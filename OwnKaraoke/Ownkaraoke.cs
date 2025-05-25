@@ -107,8 +107,28 @@ namespace OwnKaraoke
         /// </summary>
         protected bool IsAttachedToVisualTree { get; private set; }
 
+        /// <summary>
+        /// The original elapsed time in milliseconds (without tempo adjustment).
+        /// </summary>
+        private double _originalElapsedTimeMs;
+
+        /// <summary>
+        /// The last seek position in milliseconds.
+        /// </summary>
+        private double _lastSeekPositionMs;
+
+        /// <summary>
+        /// The original time elapsed since the last seek operation.
+        /// </summary>
+        private double _timeSinceLastSeekMs;
+
+        /// <summary>
+        /// Indicates whether a seek operation is currently in progress.
+        /// </summary>
+        private bool _isSeeking;
+
         #endregion
-         
+
         #region Constructor and Initialization
 
         /// <summary>
@@ -145,13 +165,7 @@ namespace OwnKaraoke
 
         #endregion
 
-        #region Timing and Duration Calculations
-
-        /// <summary>
-        /// Handles changes to the Tempo property during playback.
-        /// </summary>
-        /// <param name="newTempo">The new tempo value.</param>
-        private void HandleTempoChanged(double newTempo) { }
+        #region Timing and Duration Calculation
 
         /// <summary>
         /// Calculates the duration for highlighting a specific syllable.
@@ -177,6 +191,16 @@ namespace OwnKaraoke
         #region Event Handlers
 
         /// <summary>
+        /// Handles changes to the Tempo property during playback.
+        /// </summary>
+        /// <param name="newTempo">The new tempo value.</param>
+        private void HandleTempoChanged(double newTempo)
+        {
+            // Update duration for the new tempo
+            UpdateDurationForTempo();
+        }
+
+        /// <summary>
         /// Handles changes to the ItemsSource property.
         /// </summary>
         /// <param name="newValue">The new ItemsSource value.</param>
@@ -186,7 +210,16 @@ namespace OwnKaraoke
             if (newValue != null)
                 _itemsSourceInternal.AddRange(newValue);
 
+            CalculateDuration();
             ClearFormattedTextCache();
+
+            if (_itemsSourceInternal.Count == 0)
+            {
+                Status = KaraokeStatus.Idle;
+                OriginalPosition = 0;
+                Position = 0;
+            }
+
             ResetAndBuildLines();
         }
 
@@ -212,9 +245,16 @@ namespace OwnKaraoke
             _timeElapsedInCurrentSyllableMs = 0;
             _firstSyllableIndexForLineBuilding = 0;
             _isAnimatingLines = false;
+            _originalElapsedTimeMs = 0;
+            _lastSeekPositionMs = 0;
+            _timeSinceLastSeekMs = 0;
 
             BuildLines();
-            StartAnimation();
+
+            if (_itemsSourceInternal.Count > 0 && Status == KaraokeStatus.Playing)
+            {
+                StartAnimation();
+            }
         }
 
         #endregion
