@@ -326,10 +326,10 @@ namespace AvaloniaKaraoke.Views
                     {
                         var tempoPercentage = currentTempo * 100;
                         var sign = tempoPercentage >= 0 ? "+" : "";
-                        tempoInfo = $" | Tempó: {sign}{tempoPercentage:F0}%";
+                        tempoInfo = $" | Tempo: {sign}{tempoPercentage:F0}%";
                     }
 
-                    ProgressText.Text = $"Haladás: {progress:F1}% | Idő: {realElapsed:mm\\:ss}/{adjustedTimeSpan:mm\\:ss}{tempoInfo}";
+                    ProgressText.Text = $"Progress: {progress:F1}% | Time: {realElapsed:mm\\:ss}/{adjustedTimeSpan:mm\\:ss}{tempoInfo}";
 
                     if (progress > 97) 
                     {
@@ -337,7 +337,7 @@ namespace AvaloniaKaraoke.Views
                         if (karaokeElapsedTime >= originalTotalDuration + timeToWait)
                         {
                             StopButton_Click(sender, new RoutedEventArgs());
-                            StatusText.Text = "Dal befejezve! 🎉";
+                            StatusText.Text = "Song finished! 🎉";
                         }
                     }
                 }
