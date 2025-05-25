@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -33,10 +35,17 @@ namespace AvaloniaKaraoke.Views
 
         public MainWindow()
         {
-            InitializeComponent();
-            DataContext = this;
+            
+            InitializeComponent();            
+
+            DataContext = this;  
+
             InitializeSongs();
             SetupStatusTimer();
+
+            TempoSlider.PropertyChanged += OnTempoSliderChanged;
+
+            UpdateTempoPercentage(0.0);
         }
 
         private void InitializeSongs()
@@ -284,7 +293,6 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
-        // UpdateStatus módszer frissítése a MainWindow-ban - javított verzió
         private void UpdateStatus(object? sender, EventArgs e)
         {
             if (_isPlaying)
@@ -330,6 +338,21 @@ namespace AvaloniaKaraoke.Views
         {
             _statusTimer?.Stop();
             base.OnClosed(e);
+        }
+
+        private void OnTempoSliderChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property == RangeBase.ValueProperty && e.NewValue is double newTempo)
+            {
+                UpdateTempoPercentage(newTempo);
+            }
+        }
+
+        private void UpdateTempoPercentage(double tempo)
+        {
+            var percentage = tempo * 100;
+            var sign = percentage >= 0 ? "+" : "";
+            TempoPercentage.Text = $"({sign}{percentage:F0}%)";
         }
     }
 }

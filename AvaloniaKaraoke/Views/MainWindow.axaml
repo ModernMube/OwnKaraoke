@@ -4,7 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:OwnKaraoke;assembly=OwnKaraoke"
         xmlns:vm="clr-namespace:AvaloniaKaraoke.Views;assembly=AvaloniaKaraoke"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
         x:Class="AvaloniaKaraoke.Views.MainWindow"
         x:DataType="vm:MainWindow"
         Title="Karaoke Demo App"
@@ -32,6 +32,7 @@
             
             <local:OwnKaraokeDisplay x:Name="KaraokeControl"
                                   ItemsSource="{Binding KaraokeLyrics}"
+								  Tempo="{Binding #TempoSlider.Value}"
                                   VisibleLinesCount="4"
                                   FontSize="48"
                                   FontFamily="Arial"
@@ -78,6 +79,27 @@
                       MinWidth="200"
                       FontSize="14"
                       SelectionChanged="SongSelector_SelectionChanged"/>
+
+			<StackPanel Orientation="Horizontal" Margin="10" VerticalAlignment="Top">
+				
+				<TextBlock Text="Tempo:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+				
+				<Slider Name="TempoSlider"
+						Minimum="-2.0"
+						Maximum="2.0"
+						Value="0.0"
+						Width="200"
+						TickFrequency="0.01"
+						IsSnapToTickEnabled="True"
+						VerticalAlignment="Center"/>
+				<TextBlock Text="{Binding #TempoSlider.Value, StringFormat={}{0:F2}}"
+						   VerticalAlignment="Center"
+						   Margin="10,0,0,0"/>
+				<TextBlock Name="TempoPercentage"
+						   VerticalAlignment="Center"
+						   Margin="10,0,0,0"/>
+			</StackPanel>
+			
         </StackPanel>
 
         <!-- Státusz információk -->

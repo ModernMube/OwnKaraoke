@@ -145,7 +145,7 @@ namespace OwnKaraoke
         }
 
         /// <summary>
-        /// Calculates the highlight ratio for the current syllable based on timing.
+        /// Calculates the highlight ratio for the current syllable based on timing with tempo support.
         /// </summary>
         /// <param name="syllable">The syllable to calculate the ratio for.</param>
         /// <returns>A value between 0.0 and 1.0 representing the highlight progress.</returns>
@@ -153,18 +153,21 @@ namespace OwnKaraoke
         {
             var currentElement = syllable.OriginalElement;
 
-            if (_timeElapsedInCurrentSyllableMs < currentElement.StartTimeMs)
+            var tempoAdjustedStartTime = ApplyTempoToTime(currentElement.StartTimeMs);
+
+            if (_timeElapsedInCurrentSyllableMs < tempoAdjustedStartTime)
                 return 0.0;
 
             if (syllable.GlobalIndex == _currentGlobalSyllableIndex)
             {
-                var syllableDuration = CalculateSyllableDuration(syllable.GlobalIndex);
-                var timeIntoSyllable = _timeElapsedInCurrentSyllableMs - currentElement.StartTimeMs;
+                var originalDuration = CalculateSyllableDuration(syllable.GlobalIndex);
+                var tempoAdjustedDuration = ApplyTempoToTime(originalDuration);
+                var timeIntoSyllable = _timeElapsedInCurrentSyllableMs - tempoAdjustedStartTime;
 
-                if (syllableDuration <= 0)
+                if (tempoAdjustedDuration <= 0)
                     return 1.0;
 
-                return Math.Clamp(timeIntoSyllable / syllableDuration, 0.0, 1.0);
+                return Math.Clamp(timeIntoSyllable / tempoAdjustedDuration, 0.0, 1.0);
             }
 
             if (syllable.GlobalIndex < _currentGlobalSyllableIndex)

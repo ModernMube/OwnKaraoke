@@ -150,7 +150,7 @@ namespace OwnKaraoke
         }
 
         /// <summary>
-        /// Updates the karaoke highlighting animation logic.
+        /// Updates the karaoke highlighting animation logic with tempo support.
         /// </summary>
         /// <param name="elapsedMs">The elapsed time in milliseconds since the last frame.</param>
         private void UpdateAnimationLogic(double elapsedMs)
@@ -159,13 +159,17 @@ namespace OwnKaraoke
                 return;
 
             var syllableAdvanced = false;
-            var totalElapsedTime = _timeElapsedInCurrentSyllableMs + elapsedMs;
+
+            var tempoAdjustedElapsedMs = ApplyTempoToElapsedTime(elapsedMs);
+            var totalElapsedTime = _timeElapsedInCurrentSyllableMs + tempoAdjustedElapsedMs;
 
             while (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
             {
                 var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
 
-                if (totalElapsedTime >= currentSyllable.StartTimeMs)
+                var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
+
+                if (totalElapsedTime >= tempoAdjustedStartTime)
                 {
                     break;
                 }
@@ -179,12 +183,14 @@ namespace OwnKaraoke
             if (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
             {
                 var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
-                var syllableDuration = CalculateSyllableDuration(_currentGlobalSyllableIndex);
-                var timeIntoSyllable = totalElapsedTime - currentSyllable.StartTimeMs;
+
+                var tempoAdjustedDuration = ApplyTempoToTime(CalculateSyllableDuration(_currentGlobalSyllableIndex));
+                var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
+                var timeIntoSyllable = totalElapsedTime - tempoAdjustedStartTime;
 
                 _timeElapsedInCurrentSyllableMs = totalElapsedTime;
 
-                if (timeIntoSyllable >= syllableDuration)
+                if (timeIntoSyllable >= tempoAdjustedDuration)
                 {
                     _currentGlobalSyllableIndex++;
                     syllableAdvanced = true;

@@ -139,11 +139,19 @@ namespace OwnKaraoke
             this.GetObservable(AlreadySungBrushProperty).Subscribe(_ => InvalidateVisual());
             this.GetObservable(ForegroundProperty).Subscribe(_ => InvalidateVisual());
             this.GetObservable(TextAlignmentProperty).Subscribe(_ => InvalidateVisual());
+
+            this.GetObservable(TempoProperty).Subscribe(HandleTempoChanged);
         }
 
         #endregion
 
         #region Timing and Duration Calculations
+
+        /// <summary>
+        /// Handles changes to the Tempo property during playback.
+        /// </summary>
+        /// <param name="newTempo">The new tempo value.</param>
+        private void HandleTempoChanged(double newTempo) { }
 
         /// <summary>
         /// Calculates the duration for highlighting a specific syllable.
@@ -241,6 +249,44 @@ namespace OwnKaraoke
             ClearFormattedTextCache();
         }
 
-        #endregion                           
+        #endregion
+
+        #region Tempo Calculations
+
+        /// <summary>
+        /// Calculates the tempo multiplier from the Tempo property.
+        /// </summary>
+        /// <returns>The tempo multiplier (1.0 = normal speed, 1.1 = 10% faster, 0.9 = 10% slower)</returns>
+        private double GetTempoMultiplier()
+        {
+            // Tempo range: -2.0 to +2.0
+            // Each 0.1 = 10% change
+            // Formula: 1.0 + (Tempo * 1.0) = multiplier
+            return 1.0 + Tempo;
+        }
+
+        /// <summary>
+        /// Applies tempo scaling to a time value.
+        /// </summary>
+        /// <param name="originalTimeMs">The original time in milliseconds.</param>
+        /// <returns>The tempo-adjusted time in milliseconds.</returns>
+        private double ApplyTempoToTime(double originalTimeMs)
+        {
+            var multiplier = GetTempoMultiplier();
+            return originalTimeMs / multiplier;
+        }
+
+        /// <summary>
+        /// Applies tempo scaling to elapsed time during animation.
+        /// </summary>
+        /// <param name="elapsedMs">The elapsed time in milliseconds.</param>
+        /// <returns>The tempo-adjusted elapsed time.</returns>
+        private double ApplyTempoToElapsedTime(double elapsedMs)
+        {
+            var multiplier = GetTempoMultiplier();
+            return elapsedMs * multiplier;
+        }
+
+        #endregion
     }
 }

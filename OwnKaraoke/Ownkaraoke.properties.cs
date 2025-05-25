@@ -163,6 +163,31 @@ namespace OwnKaraoke
             set => SetValue(TextAlignmentProperty, value);
         }
 
+        #region Tempo Property
+
+        /// <summary>
+        /// Defines the Tempo property for controlling playback speed.
+        /// Range: -2.0 to +2.0, where each 0.1 represents 10% speed change.
+        /// 0.0 = normal speed, 0.1 = 10% faster, -0.1 = 10% slower
+        /// </summary>
+        public static readonly StyledProperty<double> TempoProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(
+                nameof(Tempo),
+                0.0,
+                validate: value => value >= -2.0 && value <= 2.0);
+
+        /// <summary>
+        /// Gets or sets the tempo (speed) of the karaoke playback.
+        /// Range: -2.0 to +2.0, where each 0.1 represents 10% speed change.
+        /// </summary>
+        public double Tempo
+        {
+            get => GetValue(TempoProperty);
+            set => SetValue(TempoProperty, value);
+        }
+
+        #endregion
+
         #endregion
     }
 }
