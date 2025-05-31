@@ -1,9 +1,7 @@
 # OwnKaraoke 
 <a href="https://www.buymeacoffee.com/ModernMube">
-  <img src="https://img.shields.io/badge/Support-Buy%20Me%20A%20Coffe-orange" alt="Buy Me a Coffe">
+  <img src="https://img.shields.io/badge/Support-Buy%20Me%20A%20Coffee-orange" alt="Buy Me a Coffee">
 </a>
-
-##
 
 A high-performance, cross-platform karaoke text display control for Avalonia UI applications with smooth scrolling animations, syllable-level highlighting, and real-time tempo control.
 
@@ -20,9 +18,11 @@ A high-performance, cross-platform karaoke text display control for Avalonia UI 
 
 ## Installation
 
-Add the control files to your Avalonia project:
-- `AvaloniaKaraokeControl.cs` - Main karaoke display control
-- `OwnKaraokeLyric.cs` - LRC file parser for lyric loading
+Add the OwnKaraoke project to your Avalonia solution and reference it in your main project:
+
+```xml
+<ProjectReference Include="..\OwnKaraoke\OwnKaraoke.csproj" />
+```
 
 ## Quick Start
 
@@ -59,9 +59,6 @@ Add the control files to your Avalonia project:
                 IsSnapToTickEnabled="True"
                 VerticalAlignment="Center"/>
         <TextBlock Text="{Binding #TempoSlider.Value, StringFormat={}{0:F1}}" 
-                   VerticalAlignment="Center" 
-                   Margin="10,0,0,0"/>
-        <TextBlock Name="TempoPercentage" 
                    VerticalAlignment="Center" 
                    Margin="10,0,0,0"/>
     </StackPanel>
@@ -183,8 +180,8 @@ The parser supports standard LRC format with enhanced word-level timing:
 ```
 [ar:Artist Name]
 [ti:Song Title]
-[00:12.00]<00:12.17>Egy<00:12.33>hálás<00:12.99>szív
-[00:15.50]<00:16.43>Egy<00:16.67>hálás<00:17.10>szív
+[00:12.00]<00:12.17>Word1<00:12.33>Word2<00:12.99>Word3
+[00:15.50]<00:16.43>Next<00:16.67>line<00:17.10>here
 ```
 
 ### Loading LRC Files
@@ -241,6 +238,11 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `Tempo` | `double` | `0.0` | Playback speed adjustment (-2.0 to +2.0, where 0.1 = 10% change) |
+| `Status` | `KaraokeStatus` | `Idle` | Current playback status (Idle, Playing, Paused, Finished) |
+| `Position` | `double` | `0.0` | Current position in milliseconds (tempo-adjusted) |
+| `Duration` | `double` | `0.0` | Total duration in milliseconds (tempo-adjusted) |
+| `OriginalPosition` | `double` | `0.0` | Current position in original time (without tempo) |
+| `OriginalDuration` | `double` | `0.0` | Total duration in original time (without tempo) |
 
 ### Appearance Properties
 
@@ -276,119 +278,156 @@ karaokeControl.Resume();
 
 // Stop and reset to beginning
 karaokeControl.Stop();
+
+// Seek to specific position (milliseconds)
+karaokeControl.Seek(30000); // Seek to 30 seconds
 ```
+
+## Architecture
+
+### Core Classes
+
+- **`OwnKaraokeDisplay`** - Main control class with rendering and animation logic
+- **`TimedTextElement`** - Record representing a single timed text element
+- **`KaraokeLine`** - Internal class representing a display line with syllables
+- **`SyllableMetrics`** - Internal class containing syllable positioning and formatting
+- **`KaraokeStatus`** - Enum for playback status (Idle, Playing, Paused, Finished)
+- **`OwnKaraokeLyric`** - Static parser class for LRC files
+- **`TimerDisposable`** - Helper class for timer disposal
+
+### Key Features
+
+#### Advanced Scrolling Logic
+The control implements intelligent scrolling with multiple conditions:
+- Automatic scrolling when the first line is fully processed
+- Smart handling of short lines (< 4 syllables)
+- 1/3 rule for normal lines - scrolls when highlight reaches 1/3 into the second line
+- Optimized seek positioning to ensure target syllables are visible
+
+#### Performance Optimizations
+- **FormattedText caching** - Reduces text rendering overhead
+- **Typeface caching** - Avoids repeated typeface creation
+- **Intelligent cache management** - Automatic cleanup when cache grows too large
+- **Efficient string building** - Reusable StringBuilder for line construction
+
+#### Real-time Tempo Processing
+- **Thread-safe tempo changes** - Can be modified during playback
+- **Dual timing system** - Tracks both original and tempo-adjusted time
+- **Smooth transitions** - No interruption when tempo changes
+- **Performance optimized** - Minimal CPU impact for tempo calculations
 
 ## Advanced Usage
 
-### Custom Styling with Tempo Control
+### Custom Animation Constants
 
-```xml
-<Grid>
-    <!-- Tempo controls -->
-    <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Center">
-        <Button Content="Slower" Click="SlowerButton_Click" Margin="5"/>
-        <TextBlock Text="{Binding #KaraokeControl.Tempo, StringFormat=Tempo: {0:F1}}" 
-                   VerticalAlignment="Center" Margin="10"/>
-        <Button Content="Faster" Click="FasterButton_Click" Margin="5"/>
-        <Button Content="Normal" Click="NormalButton_Click" Margin="5"/>
-    </StackPanel>
-
-    <!-- Karaoke display -->
-    <karaoke:OwnKaraokeDisplay x:Name="KaraokeControl"
-                              ItemsSource="{Binding KaraokeData}"
-                              VisibleLinesCount="4"
-                              FontSize="32"
-                              FontFamily="Impact"
-                              FontWeight="Bold"
-                              TextAlignment="Center"
-                              Tempo="{Binding SelectedTempo}"
-                              HighlightBrush="#FF00FF"
-                              AlreadySungBrush="#FFD700"
-                              Foreground="#FFFFFF"
-                              Background="#000000" />
-</Grid>
-```
-
-### Dynamic Content Updates with Tempo
+You can modify animation speeds by changing these constants in the source code:
 
 ```csharp
-// Update content dynamically from LRC file
-await karaokeControl.LoadFromLrcFileAsync("newsong.lrc");
-karaokeControl.Tempo = 0.1; // Start 10% faster
-karaokeControl.Start();
-
-// Or manually
-var newLyrics = await OwnKaraokeLyric.ParseFromFileAsync("song.lrc");
-karaokeControl.ItemsSource = newLyrics;
-karaokeControl.Tempo = -0.2; // Start 20% slower
-karaokeControl.Start();
+// In OwnKaraoke.cs
+private const double LINE_ANIMATION_SPEED = 0.15;      // pixels per millisecond
+private const double OPACITY_ANIMATION_SPEED = 0.00076; // opacity per millisecond
+private const double FIXED_SPACE_WIDTH_FACTOR = 0.3;   // space width relative to font size
 ```
 
-### Event Handling
+### Event Handling Example
 
-The control automatically handles timing and animations. The tempo can be adjusted in real-time without affecting the animation state.
+```csharp
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+        
+        // Monitor status changes
+        KaraokeControl.GetObservable(OwnKaraokeDisplay.StatusProperty)
+            .Subscribe(status => 
+            {
+                switch (status)
+                {
+                    case KaraokeStatus.Playing:
+                        Console.WriteLine("Karaoke started playing");
+                        break;
+                    case KaraokeStatus.Finished:
+                        Console.WriteLine("Karaoke finished");
+                        break;
+                }
+            });
+    }
+    
+    private void SlowerButton_Click(object sender, RoutedEventArgs e)
+    {
+        KaraokeControl.Tempo = Math.Max(-2.0, KaraokeControl.Tempo - 0.1);
+    }
+    
+    private void FasterButton_Click(object sender, RoutedEventArgs e)
+    {
+        KaraokeControl.Tempo = Math.Min(2.0, KaraokeControl.Tempo + 0.1);
+    }
+}
+```
 
-## Performance Considerations
+### Custom Styling
 
-### Caching
-- **FormattedText Caching**: Automatically caches formatted text objects for better performance
-- **Typeface Caching**: Caches typeface objects to avoid repeated creation
-- **Automatic Cache Management**: Implements intelligent cache size limits
-
-### Optimization Tips
-- Use consistent font properties when possible to maximize cache hits
-- Avoid frequent changes to visual properties during playback
-- Consider memory usage when working with very large lyric sets
-- Tempo changes are lightweight and don't affect performance
+```xml
+<karaoke:OwnKaraokeDisplay x:Name="KaraokeControl"
+                          VisibleLinesCount="4"
+                          FontSize="32"
+                          FontFamily="Impact"
+                          FontWeight="Bold"
+                          TextAlignment="Center"
+                          HighlightBrush="#FF00FF"
+                          AlreadySungBrush="#FFD700"
+                          Foreground="#FFFFFF"
+                          Background="#000000" />
+```
 
 ## Animation Behavior
 
 ### Highlighting Animation
 - Syllables highlight progressively from left to right
-- Highlight timing is calculated based on the time difference between consecutive elements
-- Default highlighting duration is 75% of the time to the next syllable (max 1000ms)
-- **Tempo adjustments apply in real-time** to all timing calculations
+- Highlight timing is calculated as 75% of the time to the next syllable (max 1000ms)
+- Tempo adjustments apply in real-time to all timing calculations
 
 ### Scrolling Animation
-- Lines scroll smoothly when the highlight reaches approximately 1/3 through the second visible line
+- Lines scroll smoothly when highlight reaches approximately 1/3 through the second visible line
 - Smooth easing animations for both position and opacity changes
-- Configurable animation speeds via constants in the source code
-- **Tempo does not affect scrolling animations**, only text highlighting timing
+- Tempo does not affect scrolling animations, only text highlighting timing
 
-### Animation Constants
-```csharp
-// Modifiable in source code
-private const double LINE_ANIMATION_SPEED = 0.15;      // pixels per millisecond
-private const double OPACITY_ANIMATION_SPEED = 0.00076; // opacity per millisecond
-```
-
-### Tempo Calculation Details
-```csharp
-// Tempo multiplier calculation
-double multiplier = 1.0 + Tempo;  // 0.0 = 1.0x, 0.5 = 1.5x, -0.3 = 0.7x
-
-// Applied to timing calculations
-double adjustedTime = originalTime / multiplier;  // Faster tempo = shorter time intervals
-double adjustedElapsed = elapsedTime * multiplier; // Faster tempo = more elapsed time per frame
-```
+### Line Building
+- Dynamic line wrapping based on available width
+- Intelligent syllable fitting with overflow handling
+- Support for line break markers (`"._."`)
+- Automatic height and width calculation
 
 ## Technical Details
 
-### Architecture
-- Built as a custom Avalonia `Control` with hardware-accelerated rendering
-- Uses `DispatcherTimer` for smooth 60fps animations
-- Implements efficient text measurement and layout algorithms
-- **Real-time tempo processing** with minimal performance impact
+### Tempo Calculation
+```csharp
+// Tempo multiplier: 1.0 + Tempo value
+double multiplier = 1.0 + Tempo;  // 0.0 = 1.0x, 0.5 = 1.5x, -0.3 = 0.7x
+
+// Applied to timing calculations
+double adjustedTime = originalTime / multiplier;     // Faster tempo = shorter intervals
+double adjustedElapsed = elapsedTime * multiplier;   // Faster tempo = more elapsed time per frame
+```
 
 ### Memory Management
 - Automatic disposal of animation timers
 - Intelligent cache cleanup to prevent memory leaks
 - Optimized string building for line construction
+- Thread-safe operations
 
-### Thread Safety
-- All operations are executed on the UI thread
-- Safe to call from background threads (operations will be marshaled)
-- **Tempo changes are thread-safe** and applied immediately
+### Performance Characteristics
+- 60fps smooth animation using DispatcherTimer
+- Hardware-accelerated rendering through Avalonia
+- Minimal CPU usage for tempo calculations
+- Efficient text measurement and layout algorithms
+
+## Requirements
+
+- **.NET 8.0** or later
+- **Avalonia 11.3.0** or later
+- **System.Reactive 6.0.1** or later
 
 ## Troubleshooting
 
@@ -415,70 +454,29 @@ double adjustedElapsed = elapsedTime * multiplier; // Faster tempo = more elapse
 - Ensure the file contains valid timing information
 - Check for proper word-level timing format: `<mm:ss.ff>word`
 
-**Performance issues**
-- Monitor FormattedText cache size for very large datasets
-- Consider reducing `VisibleLinesCount` for better performance
-- Avoid frequent property changes during animation
-- Tempo changes are lightweight and should not cause performance issues
-
 ### Debug Tips
 - Use `OwnKaraokeLyric.ExtractMetadata()` to verify LRC file parsing
-- Check `_itemsSourceInternal.Count` to verify data loading
-- Monitor `_currentGlobalSyllableIndex` for timing issues
-- Use breakpoints in `OnFrame()` method to debug animation logic
-- **Test tempo values**: Use extreme values (±2.0) to verify tempo is working
-- **Monitor tempo multiplier**: Check `GetTempoMultiplier()` return value
+- Monitor syllable index progression during playback
+- Check tempo multiplier calculations with extreme values (±2.0)
+- Use breakpoints in animation logic to debug timing issues
 
-### LRC File Format Requirements
-- Lines must follow the pattern: `[mm:ss.ff]<mm:ss.ff>word<mm:ss.ff>word...`
-- Time format: minutes:seconds.centiseconds (e.g., `01:23.45`)
-- Metadata lines start with `[ar:`, `[ti:`, `[al:`, etc.
-- Empty lines and metadata lines are automatically skipped
+## Support
 
-### Tempo Feature Notes
-- **Real-time adjustment**: Tempo can be changed during playback without interruption
-- **Range validation**: Values outside -2.0 to +2.0 are automatically clamped
-- **Precision**: Use increments of 0.1 for 10% speed changes
-- **Performance**: Tempo calculations are optimized for minimal CPU impact
+If you find this project helpful, consider supporting the development:
 
-## Support My Work
+<a href="https://www.buymeacoffee.com/ModernMube" target="_blank">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" >
+</a>
 
-If you find this project helpful, consider buying me a coffee!
+## License
 
-<a href="https://www.buymeacoffee.com/ModernMube" 
-    target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" 
-    alt="Buy Me A Coffee" 
-    style="height: 60px !important;width: 217px !important;" >
- </a>
-
-## Version History
-
-- **v1.1.0** - Added real-time tempo control
-  - Real-time tempo adjustment from -200% to +200% speed
-  - Tempo property with data binding support
-  - Thread-safe tempo changes during playback
-  - Optimized tempo calculation algorithms
-- **v1.0.0** - Initial release with core karaoke functionality
-  - Syllable-level highlighting
-  - Smooth scrolling animations
-  - Multi-line display support
-  - Comprehensive styling options
-  - Built-in LRC file parser (`OwnKaraokeLyric`)
-  - Word-level timing support
-  - Metadata extraction from LRC files
-  - Extension methods for easy integration
+This project is open source. Please check the license file for more details.
 
 ## API Reference
 
 ### OwnKaraokeDisplay Class
 
 Main karaoke display control with all styling, animation, and tempo control capabilities.
-
-#### New Properties (v1.1.0)
-- `Tempo` (double): Real-time playback speed control (-2.0 to +2.0)
-
-#### New Methods (v1.1.0)
-- Tempo calculations are handled internally, no new public methods
 
 ### OwnKaraokeLyric Class
 
