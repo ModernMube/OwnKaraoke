@@ -15,14 +15,39 @@ using System.Threading.Tasks;
 
 namespace AvaloniaKaraoke.Views
 {
+    /// <summary>
+    /// Main window class for the karaoke application that implements property change notifications.
+    /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        /// <summary>
+        /// Collection of timed text elements representing the karaoke lyrics.
+        /// </summary>
         private ObservableCollection<TimedTextElement> _karaokeLyrics = new();
+        
+        /// <summary>
+        /// Timer for updating UI elements at regular intervals.
+        /// </summary>
         private DispatcherTimer? _statusTimer;
+        
+        /// <summary>
+        /// Subscription for monitoring karaoke status changes.
+        /// </summary>
         private IDisposable? _statusSubscription;
+        
+        /// <summary>
+        /// Subscription for monitoring position changes in the karaoke playback.
+        /// </summary>
         private IDisposable? _positionSubscription;
+        
+        /// <summary>
+        /// Subscription for monitoring duration changes in the karaoke playback.
+        /// </summary>
         private IDisposable? _durationSubscription;
 
+        /// <summary>
+        /// Gets or sets the collection of timed text elements representing the karaoke lyrics.
+        /// </summary>
         public ObservableCollection<TimedTextElement> KaraokeLyrics
         {
             get => _karaokeLyrics;
@@ -33,6 +58,9 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainWindow"/> class.
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
@@ -42,12 +70,40 @@ namespace AvaloniaKaraoke.Views
             SetupStatusTimer();
             SetupKaraokeSubscriptions();
 
-            TempoSlider.PropertyChanged += OnTempoSliderChanged;
+            // FIX: Proper tempo slider event handling
+            SetupTempoSlider();
+
             ProgressBar.PointerPressed += ProgressBar_PointerPressed;
 
             UpdateTempoPercentage(0.0);
         }
 
+        /// <summary>
+        /// Sets up the tempo slider event handling.
+        /// </summary>
+        private void SetupTempoSlider()
+        {
+            // Initialization: slider value = control tempo value
+            //TempoSlider.Value = KaraokeControl.Tempo;
+
+            // Event handling: when the slider changes, update the control's tempo
+            TempoSlider.GetObservable(RangeBase.ValueProperty)
+                .Subscribe(newValue =>
+                {
+                    if (newValue is double tempo)
+                    {
+                        // MAIN TASK: Setting the tempo property of the karaoke control
+                        KaraokeControl.Tempo = tempo;
+
+                        // UI update
+                        UpdateTempoPercentage(tempo);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Initializes the list of available songs in the song selector.
+        /// </summary>
         private void InitializeSongs()
         {
             var songs = new List<string>
@@ -71,6 +127,9 @@ namespace AvaloniaKaraoke.Views
             MimeTypes = new[] { "text/plain" }
         };
 
+        /// <summary>
+        /// Sets up the timer for regular UI updates.
+        /// </summary>
         private void SetupStatusTimer()
         {
             _statusTimer = new DispatcherTimer
@@ -81,6 +140,9 @@ namespace AvaloniaKaraoke.Views
             _statusTimer.Start();
         }
 
+        /// <summary>
+        /// Sets up subscriptions to monitor karaoke control property changes.
+        /// </summary>
         private void SetupKaraokeSubscriptions()
         {
             // Subscribe to status changes
@@ -96,6 +158,10 @@ namespace AvaloniaKaraoke.Views
                 .Subscribe(OnDurationChanged);
         }
 
+        /// <summary>
+        /// Handles karaoke status changes and updates the UI accordingly.
+        /// </summary>
+        /// <param name="status">The new karaoke status.</param>
         private void OnKaraokeStatusChanged(KaraokeStatus status)
         {
             Dispatcher.UIThread.Post(() =>
@@ -112,6 +178,10 @@ namespace AvaloniaKaraoke.Views
             });
         }
 
+        /// <summary>
+        /// Handles position changes in the karaoke playback and updates the UI.
+        /// </summary>
+        /// <param name="position">The new position in milliseconds.</param>
         private void OnPositionChanged(double position)
         {
             Dispatcher.UIThread.Post(() =>
@@ -126,6 +196,10 @@ namespace AvaloniaKaraoke.Views
             });
         }
 
+        /// <summary>
+        /// Handles duration changes in the karaoke playback and updates the UI.
+        /// </summary>
+        /// <param name="duration">The new duration in milliseconds.</param>
         private void OnDurationChanged(double duration)
         {
             Dispatcher.UIThread.Post(() =>
@@ -136,6 +210,10 @@ namespace AvaloniaKaraoke.Views
             });
         }
 
+        /// <summary>
+        /// Updates the control states based on the current karaoke status.
+        /// </summary>
+        /// <param name="status">The current karaoke status.</param>
         private void UpdateControlsForStatus(KaraokeStatus status)
         {
             switch (status)
@@ -170,6 +248,11 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Handles the click event for the play/pause button.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
             if (!KaraokeLyrics.Any())
@@ -195,11 +278,21 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Handles the click event for the stop button.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
             KaraokeControl.Stop();
         }
 
+        /// <summary>
+        /// Handles the click event for the reset button.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
             KaraokeControl.Stop();
@@ -214,6 +307,43 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Handles the click event for the tempo reset button.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void ResetTempoButton_Click(object sender, RoutedEventArgs e)
+        {
+            TempoSlider.Value = 0.0; // This automatically sets KaraokeControl.Tempo as well
+        }
+
+        /// <summary>
+        /// Handles the click event for the faster tempo button.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void FasterButton_Click(object sender, RoutedEventArgs e)
+        {
+            var newTempo = Math.Min(2.0, TempoSlider.Value + 0.1);
+            TempoSlider.Value = newTempo;
+        }
+
+        /// <summary>
+        /// Handles the click event for the slower tempo button.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
+        private void SlowerButton_Click(object sender, RoutedEventArgs e)
+        {
+            var newTempo = Math.Max(-2.0, TempoSlider.Value - 0.1);
+            TempoSlider.Value = newTempo;
+        }
+
+        /// <summary>
+        /// Handles the pointer pressed event for the progress bar to seek within the song.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void ProgressBar_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e)
         {
             if (KaraokeControl.Duration > 0 && sender is ProgressBar progressBar)
@@ -226,6 +356,11 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Handles the selection changed event for the song selector.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void SongSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (SongSelector.SelectedItem is string selectedSong)
@@ -243,6 +378,11 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Loads the lyrics for the selected song.
+        /// </summary>
+        /// <param name="songName">The name of the song to load.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         private async Task LoadSongLyrics(string songName)
         {
             KaraokeLyrics.Clear();
@@ -272,6 +412,10 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Gets the lyrics for "Hallelujah" by Leonard Cohen.
+        /// </summary>
+        /// <returns>A list of timed text elements representing the lyrics.</returns>
         private List<TimedTextElement> GetHallelujahLyrics()
         {
             return new List<TimedTextElement>
@@ -313,6 +457,10 @@ namespace AvaloniaKaraoke.Views
             };
         }
 
+        /// <summary>
+        /// Gets the lyrics for "Bohemian Rhapsody" by Queen.
+        /// </summary>
+        /// <returns>A list of timed text elements representing the lyrics.</returns>
         private List<TimedTextElement> GetBohemianRhapsodyLyrics()
         {
             return new List<TimedTextElement>
@@ -347,6 +495,10 @@ namespace AvaloniaKaraoke.Views
             };
         }
 
+        /// <summary>
+        /// Gets the lyrics for "Hotel California" by Eagles.
+        /// </summary>
+        /// <returns>A list of timed text elements representing the lyrics.</returns>
         private List<TimedTextElement> GetHotelCaliforniaLyrics()
         {
             return new List<TimedTextElement>
@@ -374,6 +526,10 @@ namespace AvaloniaKaraoke.Views
             };
         }
 
+        /// <summary>
+        /// Gets lyrics from a file selected by the user.
+        /// </summary>
+        /// <returns>A list of timed text elements representing the lyrics.</returns>
         private async Task<List<TimedTextElement>> GetDefaultLyrics()
         {
             IReadOnlyList<IStorageFile> result = await this.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions()
@@ -393,6 +549,11 @@ namespace AvaloniaKaraoke.Views
             return new List<TimedTextElement>();
         }
 
+        /// <summary>
+        /// Updates the UI with current karaoke information at regular intervals.
+        /// </summary>
+        /// <param name="sender">The event sender.</param>
+        /// <param name="e">The event arguments.</param>
         private void UpdateUI(object? sender, EventArgs e)
         {
             // Update debug information
@@ -419,13 +580,24 @@ namespace AvaloniaKaraoke.Views
             }
         }
 
+        /// <summary>
+        /// Occurs when a property value changes.
+        /// </summary>
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        /// <summary>
+        /// Raises the PropertyChanged event for the specified property.
+        /// </summary>
+        /// <param name="propertyName">The name of the property that changed.</param>
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        /// <summary>
+        /// Called when the window is closed to clean up resources.
+        /// </summary>
+        /// <param name="e">The event arguments.</param>
         protected override void OnClosed(EventArgs e)
         {
             _statusTimer?.Stop();
@@ -435,14 +607,15 @@ namespace AvaloniaKaraoke.Views
             base.OnClosed(e);
         }
 
-        private void OnTempoSliderChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-        {
-            if (e.Property == RangeBase.ValueProperty && e.NewValue is double newTempo)
-            {
-                UpdateTempoPercentage(newTempo);
-            }
-        }
+        /// <summary>
+        /// REMOVED: The old OnTempoSliderChanged method, as it's no longer needed.
+        /// The new SetupTempoSlider() method handles this.
+        /// </summary>
 
+        /// <summary>
+        /// Updates the displayed tempo percentage based on the current tempo value.
+        /// </summary>
+        /// <param name="tempo">The current tempo value.</param>
         private void UpdateTempoPercentage(double tempo)
         {
             var percentage = tempo * 100;

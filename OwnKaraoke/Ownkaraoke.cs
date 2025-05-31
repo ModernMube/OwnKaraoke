@@ -191,13 +191,79 @@ namespace OwnKaraoke
         #region Event Handlers
 
         /// <summary>
-        /// Handles changes to the Tempo property during playback.
+        /// Handles changes in the Tempo property during playback.
+        /// IMPROVED version: Properly resynchronizes the animation.
         /// </summary>
         /// <param name="newTempo">The new tempo value.</param>
         private void HandleTempoChanged(double newTempo)
         {
-            // Update duration for the new tempo
+            // Update the total duration for the new tempo
             UpdateDurationForTempo();
+
+            // If playback is in progress, we need to resynchronize the timing
+            if (Status == KaraokeStatus.Playing && _itemsSourceInternal.Count > 0)
+            {
+                // FIX: Recalculate the tempo-modified position from the current original time
+                var currentOriginalPosition = _originalElapsedTimeMs;
+                var newTempoAdjustedPosition = ApplyTempoToTime(currentOriginalPosition);
+
+                // Update the Position property
+                Position = newTempoAdjustedPosition;
+
+                // CRITICAL FIX: Recalculate the _timeElapsedInCurrentSyllableMs value
+                // This is what actually drives the animation
+                _timeElapsedInCurrentSyllableMs = newTempoAdjustedPosition;
+
+                // Check if we're in the correct syllable with the new tempo
+                ValidateAndAdjustCurrentSyllable();
+            }
+        }
+
+        /// <summary>
+        /// Checks and sets the correct current syllable based on the new tempo.
+        /// IMPROVED version: Properly handles syllable transitions.
+        /// </summary>
+        private void ValidateAndAdjustCurrentSyllable()
+        {
+            if (_itemsSourceInternal.Count == 0)
+                return;
+
+            var currentOriginalTime = _originalElapsedTimeMs;
+            var newCorrectSyllableIndex = FindSyllableAtPosition(currentOriginalTime);
+
+            // If the syllable index has changed, update it
+            if (newCorrectSyllableIndex != _currentGlobalSyllableIndex)
+            {
+                _currentGlobalSyllableIndex = newCorrectSyllableIndex;
+
+                // FIX: Recalculate the time elapsed in the syllable based on the new tempo
+                if (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
+                {
+                    var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
+                    var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
+                    var tempoAdjustedCurrentTime = ApplyTempoToTime(currentOriginalTime);
+
+                    // CRITICAL: Set _timeElapsedInCurrentSyllableMs based on the new tempo
+                    _timeElapsedInCurrentSyllableMs = tempoAdjustedCurrentTime;
+                }
+
+                // Check if scrolling is needed
+                if (_displayLines.Count > 0)
+                {
+                    CheckForLineScroll();
+                }
+            }
+            else
+            {
+                // Same syllable, but recalculate the elapsed time within it based on the new tempo
+                if (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
+                {
+                    var tempoAdjustedCurrentTime = ApplyTempoToTime(currentOriginalTime);
+
+                    // CRITICAL: This value needs to be updated when tempo changes
+                    _timeElapsedInCurrentSyllableMs = tempoAdjustedCurrentTime;
+                }
+            }
         }
 
         /// <summary>
@@ -302,7 +368,10 @@ namespace OwnKaraoke
             // Tempo range: -2.0 to +2.0
             // Each 0.1 = 10% change
             // Formula: 1.0 + (Tempo * 1.0) = multiplier
-            return 1.0 + Tempo;
+            var multiplier = 1.0 + Tempo;
+
+            // Safety check: not zero or negative
+            return Math.Max(0.1, multiplier);
         }
 
         /// <summary>
@@ -326,7 +395,6 @@ namespace OwnKaraoke
             var multiplier = GetTempoMultiplier();
             return elapsedMs * multiplier;
         }
-
         #endregion
     }
 }
