@@ -260,6 +260,16 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | `HighlightBrush` | `IBrush?` | `Yellow` | Color for currently highlighted text |
 | `AlreadySungBrush` | `IBrush?` | `LightGoldenrodYellow` | Color for already sung text |
 
+## Support My Work
+
+If you find this project helpful, consider buying me a coffee!
+
+<a href="https://www.buymeacoffee.com/ModernMube" 
+    target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" 
+    alt="Buy Me A Coffee" 
+    style="height: 60px !important;width: 217px !important;" >
+ </a>
+
 ## Methods
 
 ### Playback Control
@@ -440,16 +450,6 @@ double adjustedElapsed = elapsedTime * multiplier; // Faster tempo = more elapse
 - **Range validation**: Values outside -2.0 to +2.0 are automatically clamped
 - **Precision**: Use increments of 0.1 for 10% speed changes
 - **Performance**: Tempo calculations are optimized for minimal CPU impact
-
-## Support My Work
-
-If you find this project helpful, consider buying me a coffee!
-
-<a href="https://www.buymeacoffee.com/ModernMube" 
-    target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/arial-yellow.png" 
-    alt="Buy Me A Coffee" 
-    style="height: 60px !important;width: 217px !important;" >
- </a>
 
 ## Version History
 
