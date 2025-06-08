@@ -4,11 +4,43 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	  <Authors>ModernMube</Authors>
+	  <Copyright>Copyright (c) 2025 ModernMube</Copyright>
+	  <Description>A cross platform karaoke library for .NET with Avalonia.</Description>
+	  <FileVersion>1.0.1</FileVersion>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <LangVersion>11</LangVersion>
+	  <NoWarn>IDE0090</NoWarn>
+	  <PackageId>OwnKaraokeSharp</PackageId>
+	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
+	  <PackageProjectUrl>https://github.com/ModernMube/OwnKaraoke</PackageProjectUrl>
+	  <PackageIcon>ownkaraoke.png</PackageIcon>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <PackageTags>karaoke,lrc,lyric,avalonia,cross-platform</PackageTags>
+	  <Product>Ownkaraoke</Product>
+	  <RepositoryUrl>https://github.com/ModernMube/OwnKaraoke</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <PublishRepositoryUrl>true</PublishRepositoryUrl>
+	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
+	  <IncludeSymbols>true</IncludeSymbols>
+	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	  <Version>1.0.1</Version>
+	  <Authors>ModernMube</Authors>
+	  <Company>Modernbit</Company>
+	  <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.0" />
+    <PackageReference Include="Avalonia" Version="11.3.1" />
     <PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+		<None Include="LICENSE" Pack="true" PackagePath="\" />
+		<None Include="ownkaraoke.png" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 </Project>

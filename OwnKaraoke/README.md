@@ -18,10 +18,10 @@ A high-performance, cross-platform karaoke text display control for Avalonia UI 
 
 ## Installation
 
-Add the OwnKaraoke project to your Avalonia solution and reference it in your main project:
+You can add this library to your project via NuGet or by directly referencing the project.
+```bash
+NuGet\Install-Package OwnKaraokeSharp
 
-```xml
-<ProjectReference Include="..\OwnKaraoke\OwnKaraoke.csproj" />
 ```
 
 ## Quick Start
