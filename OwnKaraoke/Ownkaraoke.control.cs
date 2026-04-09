@@ -10,6 +10,26 @@ namespace OwnKaraoke
 {
     public partial class OwnKaraokeDisplay : Control
     {
+        #region External Position Control
+
+        /// <summary>
+        /// Updates the current playback position from an external source (e.g. an audio player).
+        /// Only effective when <see cref="UseExternalPosition"/> is true.
+        /// Call this method whenever the external player reports a new position.
+        /// </summary>
+        /// <param name="positionMs">
+        /// The current playback position in milliseconds (original time, without tempo adjustment).
+        /// </param>
+        public void UpdatePosition(double positionMs)
+        {
+            if (!UseExternalPosition || _itemsSourceInternal.Count == 0)
+                return;
+
+            _externalPositionMs = Math.Max(0, positionMs);
+        }
+
+        #endregion
+
         #region Modified Public Control Methods
 
         /// <summary>
@@ -187,11 +207,9 @@ namespace OwnKaraoke
             for (int i = 0; i < _itemsSourceInternal.Count; i++)
             {
                 if (_itemsSourceInternal[i].StartTimeMs > originalPositionMs)
-                {
                     return Math.Max(0, i - 1);
-                }
             }
-            return Math.Min(_itemsSourceInternal.Count - 1, Math.Max(0, _itemsSourceInternal.Count - 1));
+            return Math.Max(0, _itemsSourceInternal.Count - 1);
         }
 
         /// <summary>

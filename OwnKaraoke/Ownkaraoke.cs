@@ -123,9 +123,15 @@ namespace OwnKaraoke
         private double _timeSinceLastSeekMs;
 
         /// <summary>
-        /// Indicates whether a seek operation is currently in progress.
+        /// Indicates whether a seek operation is currently in progress.        
+        /// private bool _isSeeking;
         /// </summary>
-        private bool _isSeeking;
+
+        /// <summary>
+        /// The current position in milliseconds provided by an external source.
+        /// Only used when <see cref="UseExternalPosition"/> is true.
+        /// </summary>
+        private double _externalPositionMs;
 
         #endregion
 
@@ -161,6 +167,7 @@ namespace OwnKaraoke
             this.GetObservable(TextAlignmentProperty).Subscribe(_ => InvalidateVisual());
 
             this.GetObservable(TempoProperty).Subscribe(HandleTempoChanged);
+            this.GetObservable(LyricOffsetProperty).Subscribe(_ => InvalidateVisual());
         }
 
         #endregion
@@ -178,12 +185,27 @@ namespace OwnKaraoke
                 return 1000;
 
             var currentElement = _itemsSourceInternal[syllableIndex];
-            var nextElement = _itemsSourceInternal[syllableIndex + 1];
+            var nextIndex = syllableIndex + 1;
+            var nextElement = _itemsSourceInternal[nextIndex];
 
-            var timeDifference = nextElement.StartTimeMs - currentElement.StartTimeMs;
-            var duration = timeDifference * 0.75;
+            // If this is a line break marker, its duration is the gap until the next real syllable
+            if (currentElement.Text == "._.")
+            {
+                if (nextIndex >= _itemsSourceInternal.Count)
+                    return 500;
+                return Math.Max(0, nextElement.StartTimeMs - currentElement.StartTimeMs);
+            }
 
-            return Math.Min(duration, 1000);
+            // If the immediately next element is a line break marker, end the highlight at the marker's time
+            // (which holds the next line's start time, not the next line's first word time)
+            if (nextElement.Text == "._.")
+            {
+                var timeDifference = nextElement.StartTimeMs - currentElement.StartTimeMs;
+                return Math.Max(0, Math.Min(timeDifference, 2000));
+            }
+
+            var diff = nextElement.StartTimeMs - currentElement.StartTimeMs;
+            return Math.Min(diff * 0.75, 1000);
         }
 
         #endregion
@@ -314,6 +336,7 @@ namespace OwnKaraoke
             _originalElapsedTimeMs = 0;
             _lastSeekPositionMs = 0;
             _timeSinceLastSeekMs = 0;
+            _externalPositionMs = 0;
 
             BuildLines();
 
@@ -395,6 +418,16 @@ namespace OwnKaraoke
             var multiplier = GetTempoMultiplier();
             return elapsedMs * multiplier;
         }
+
+        /// <summary>
+        /// Returns the effective display time including the LyricOffset.
+        /// Use this for all syllable highlight comparisons instead of _timeElapsedInCurrentSyllableMs directly.
+        /// </summary>
+        private double GetEffectiveDisplayTimeMs() =>
+            // _timeElapsedInCurrentSyllableMs is in display/real-time units.
+            // LyricOffset is also in real-time ms, so add it directly (no tempo conversion needed).
+            _timeElapsedInCurrentSyllableMs + LyricOffset;
+
         #endregion
     }
 }

@@ -10,6 +10,7 @@ A high-performance, cross-platform karaoke text display control for Avalonia UI 
 - **Syllable-level highlighting** - Progressive text highlighting synchronized with timing data
 - **Smooth scrolling animations** - Fluid line transitions with customizable animation speeds
 - **Real-time tempo control** - Adjust playback speed from -200% to +200% during playback
+- **External position mode** - Sync display to any external audio player by feeding the current position
 - **Multi-line display** - Configurable number of visible lines with automatic line wrapping
 - **Flexible styling** - Full control over fonts, colors, and text alignment
 - **Performance optimized** - Advanced caching for FormattedText objects and typefaces
@@ -110,6 +111,121 @@ KaraokeControl.Tempo = 0.0; // Normal speed
 // Start playback
 KaraokeControl.Start();
 ```
+
+## External Position Mode
+
+By default the control uses its own internal timer to advance the playback position. When you already have an audio player (e.g. OwnAudioSharp, LibVLCSharp, MediaElement) that owns the clock, you can hand over position control so the karaoke display stays perfectly in sync.
+
+### How it works
+
+1. Set `UseExternalPosition = true` before calling `Start()`.
+2. Call `Start()` to initialise the display (the internal timer still runs for smooth scroll/fade animations, but it no longer drives the position).
+3. On every position update from your audio player, call `UpdatePosition(positionMs)`.
+
+The control handles both incremental advances (next syllable) and large jumps (seeking) automatically — a jump of more than one syllable triggers a full display rebuild just like `Seek()` does.
+
+### Basic example
+
+```csharp
+// 1. Load lyrics and enable external position mode
+await KaraokeControl.LoadFromLrcFileAsync("song.lrc");
+KaraokeControl.UseExternalPosition = true;
+KaraokeControl.Start();
+
+// 2. Play your audio
+audioPlayer.Play();
+
+// 3. Feed the current position on every timer tick (e.g. every 50 ms)
+positionTimer.Tick += (_, _) =>
+{
+    KaraokeControl.UpdatePosition(audioPlayer.CurrentPositionMs);
+};
+```
+
+### OwnAudioSharp example
+
+```csharp
+using Ownaudio.Core;
+using OwnaudioNET;
+using OwnaudioNET.Mixing;
+using OwnaudioNET.Sources;
+
+public partial class MainWindow : Window
+{
+    private AudioMixer? _mixer;
+    private FileSource? _fileSource;
+    private DispatcherTimer? _syncTimer;
+
+    private async void LoadAndPlay(string lrcPath, string audioPath)
+    {
+        // 1. Initialize OwnAudioSharp engine (once per application)
+        if (!OwnaudioNet.IsInitialized)
+        {
+            OwnaudioNet.Initialize(new AudioConfig
+            {
+                SampleRate = 48000,
+                Channels = 2,
+                BufferSize = 512
+            });
+            OwnaudioNet.Start();
+        }
+
+        // 2. Create mixer and file source
+        _mixer = new AudioMixer(OwnaudioNet.Engine!.UnderlyingEngine, bufferSizeInFrames: 512);
+        _fileSource = new FileSource(audioPath,
+            targetSampleRate: OwnaudioNet.Engine.Config.SampleRate,
+            targetChannels: OwnaudioNet.Engine.Config.Channels);
+
+        _mixer.AddSource(_fileSource);
+        _fileSource.AttachToClock(_mixer.MasterClock);
+
+        // 3. Load lyrics and enable external position mode
+        await KaraokeControl.LoadFromLrcFileAsync(lrcPath);
+        KaraokeControl.UseExternalPosition = true;
+        KaraokeControl.Start();
+
+        // 4. Start playback
+        _mixer.Start();
+        _fileSource.Play();
+
+        // 5. Sync karaoke to audio position every 50 ms
+        // FileSource.Position is in seconds — multiply by 1000 for milliseconds
+        _syncTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _syncTimer.Tick += (_, _) =>
+            KaraokeControl.UpdatePosition(_fileSource.Position * 1000.0);
+        _syncTimer.Start();
+    }
+
+    private void StopPlayback()
+    {
+        _syncTimer?.Stop();
+        _fileSource?.Stop();
+        _mixer?.Stop();
+        KaraokeControl.Stop();
+    }
+}
+```
+
+### LibVLCSharp example
+
+```csharp
+using LibVLCSharp.Shared;
+
+_mediaPlayer.TimeChanged += (_, e) =>
+{
+    // e.Time is in milliseconds — call on UI thread
+    Dispatcher.UIThread.Post(() => KaraokeControl.UpdatePosition(e.Time));
+};
+```
+
+### Notes
+
+- `UpdatePosition` is a no-op when `UseExternalPosition` is `false`, so it is safe to call unconditionally.
+- `Seek()` is ignored in external position mode; seeking is handled by simply passing the new position to `UpdatePosition`.
+- Tempo (`Tempo` property) still works in external position mode — it affects how the internal time display (`Position`) is shown, but **not** the external position value you pass in.
+- Pause/Resume control the visual animation loop; your audio player handles actual pausing.
+
+---
 
 ## Tempo Control
 
@@ -238,6 +354,7 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `Tempo` | `double` | `0.0` | Playback speed adjustment (-2.0 to +2.0, where 0.1 = 10% change) |
+| `UseExternalPosition` | `bool` | `false` | When `true`, position is driven by `UpdatePosition()` calls instead of the internal timer |
 | `Status` | `KaraokeStatus` | `Idle` | Current playback status (Idle, Playing, Paused, Finished) |
 | `Position` | `double` | `0.0` | Current position in milliseconds (tempo-adjusted) |
 | `Duration` | `double` | `0.0` | Total duration in milliseconds (tempo-adjusted) |
@@ -279,8 +396,11 @@ karaokeControl.Resume();
 // Stop and reset to beginning
 karaokeControl.Stop();
 
-// Seek to specific position (milliseconds)
+// Seek to specific position (milliseconds) — internal mode only
 karaokeControl.Seek(30000); // Seek to 30 seconds
+
+// Update position from an external audio player (external mode only)
+karaokeControl.UpdatePosition(audioPlayer.CurrentPositionMs);
 ```
 
 ## Architecture
@@ -447,6 +567,12 @@ double adjustedElapsed = elapsedTime * multiplier;   // Faster tempo = more elap
 - Verify tempo value is within valid range (-2.0 to +2.0)
 - Check that animation is running (tempo only affects active playback)
 - Ensure timing data in `TimedTextElement` is properly formatted
+
+**Karaoke not in sync with external audio player**
+- Ensure `UseExternalPosition = true` is set **before** calling `Start()`
+- Call `UpdatePosition()` frequently enough (every 30–100 ms is sufficient)
+- Pass the position in **milliseconds** (original time, without any tempo offset)
+- Verify your audio player's position API returns milliseconds and not seconds or ticks
 
 **LRC file not loading**
 - Verify the LRC file exists and is accessible

@@ -152,17 +152,17 @@ namespace OwnKaraoke
         private double CalculateHighlightRatio(SyllableMetrics syllable)
         {
             var currentElement = syllable.OriginalElement;
-
+            var effectiveTimeMs = GetEffectiveDisplayTimeMs();
             var tempoAdjustedStartTime = ApplyTempoToTime(currentElement.StartTimeMs);
 
-            if (_timeElapsedInCurrentSyllableMs < tempoAdjustedStartTime)
+            if (effectiveTimeMs < tempoAdjustedStartTime)
                 return 0.0;
 
             if (syllable.GlobalIndex == _currentGlobalSyllableIndex)
             {
                 var originalDuration = CalculateSyllableDuration(syllable.GlobalIndex);
                 var tempoAdjustedDuration = ApplyTempoToTime(originalDuration);
-                var timeIntoSyllable = _timeElapsedInCurrentSyllableMs - tempoAdjustedStartTime;
+                var timeIntoSyllable = effectiveTimeMs - tempoAdjustedStartTime;
 
                 if (tempoAdjustedDuration <= 0)
                     return 1.0;

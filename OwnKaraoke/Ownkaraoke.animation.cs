@@ -18,7 +18,7 @@ namespace OwnKaraoke
 
             _lastFrameTime = TimeSpan.Zero;
 
-            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
             timer.Tick += OnTimerTick;
             timer.Start();
 
@@ -72,7 +72,20 @@ namespace OwnKaraoke
 
             UpdateAnimationLogic(deltaTime.TotalMilliseconds);
             UpdateLineAnimations(deltaTime.TotalMilliseconds);
-            InvalidateVisual();
+
+            // Only redraw if something visually changed:
+            // - line position/opacity is animating, or
+            // - the current syllable highlight is active (elapsed time >= syllable start)
+            bool needsRedraw = _isAnimatingLines;
+            if (!needsRedraw && _currentGlobalSyllableIndex < _itemsSourceInternal.Count)
+            {
+                var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
+                var adjustedStart = ApplyTempoToTime(currentSyllable.StartTimeMs);
+                needsRedraw = GetEffectiveDisplayTimeMs() >= adjustedStart;
+            }
+
+            if (needsRedraw)
+                InvalidateVisual();
         }
 
         /// <summary>
@@ -146,9 +159,9 @@ namespace OwnKaraoke
 
         /// <summary>
         /// Updates the karaoke animation with improved tempo handling.
-        /// FIX: The elapsed time is now set based on the tempo.
+        /// Supports both internal timer mode and external position mode.
         /// </summary>
-        /// <param name="elapsedMs">Elapsed time since the last frame.</param>
+        /// <param name="elapsedMs">Elapsed time since the last frame (used only in internal mode).</param>
         private void UpdateAnimationLogic(double elapsedMs)
         {
             if (_currentGlobalSyllableIndex >= _itemsSourceInternal.Count)
@@ -164,58 +177,108 @@ namespace OwnKaraoke
 
             var syllableAdvanced = false;
 
-            // FIX: Applying tempo to the elapsed time
-            var tempoAdjustedElapsedMs = ApplyTempoToElapsedTime(elapsedMs);
-
-            // Update the original elapsed time (without tempo)
-            _timeSinceLastSeekMs += elapsedMs;
-            _originalElapsedTimeMs = _lastSeekPositionMs + _timeSinceLastSeekMs;
-
-            // Update position properties
-            OriginalPosition = _originalElapsedTimeMs;
-            Position = ApplyTempoToTime(_originalElapsedTimeMs);
-
-            // FIX: Using tempo-modified elapsed time for animation
-            _timeElapsedInCurrentSyllableMs += tempoAdjustedElapsedMs;
-
-            // Check syllable transitions
-            while (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
+            if (UseExternalPosition)
             {
-                var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
-                var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
+                var newOriginalMs = _externalPositionMs;
 
-                // If we haven't reached the current syllable's start time yet
-                if (_timeElapsedInCurrentSyllableMs < tempoAdjustedStartTime)
+                // Check if we reached the end
+                if (newOriginalMs >= OriginalDuration && OriginalDuration > 0)
                 {
-                    break;
+                    Status = KaraokeStatus.Finished;
+                    OriginalPosition = OriginalDuration;
+                    Position = Duration;
+                    StopAnimation();
+                    return;
                 }
 
-                // Check if we need to advance to the next syllable
-                var originalDuration = CalculateSyllableDuration(_currentGlobalSyllableIndex);
-                var tempoAdjustedDuration = ApplyTempoToTime(originalDuration);
-                var timeIntoSyllable = _timeElapsedInCurrentSyllableMs - tempoAdjustedStartTime;
+                _originalElapsedTimeMs = newOriginalMs;
+                OriginalPosition = newOriginalMs;
+                Position = ApplyTempoToTime(newOriginalMs);
+                _timeElapsedInCurrentSyllableMs = ApplyTempoToTime(newOriginalMs);
 
-                if (timeIntoSyllable >= tempoAdjustedDuration)
+                // Apply LyricOffset: find syllable at the offset position.
+                // LyricOffset is in real-time milliseconds (e.g. to compensate for rendering lag).
+                // newOriginalMs is content-time, so we multiply by tempo to convert real-time → content-time.
+                var effectiveOriginalMs = newOriginalMs + LyricOffset * GetTempoMultiplier();
+                var newSyllableIndex = FindSyllableAtPosition(effectiveOriginalMs);
+                var previousSyllableIndex = _currentGlobalSyllableIndex;
+
+                if (newSyllableIndex != previousSyllableIndex)
                 {
-                    _currentGlobalSyllableIndex++;
+                    _currentGlobalSyllableIndex = newSyllableIndex;
                     syllableAdvanced = true;
 
-                    if (_currentGlobalSyllableIndex >= _itemsSourceInternal.Count)
+                    var indexDelta = Math.Abs(newSyllableIndex - previousSyllableIndex);
+                    bool isBackwardJump = newSyllableIndex < previousSyllableIndex;
+                    bool isLargeJump = indexDelta > Math.Max(5, EstimateSyllablesPerLine() * VisibleLinesCount);
+
+                    // For large jumps or backward jumps (seek), do a full display rebuild.
+                    // Small forward jumps (e.g. skipping a ._. marker) are treated as normal playback.
+                    if ((isBackwardJump || isLargeJump) && IsAttachedToVisualTree)
                     {
-                        Status = KaraokeStatus.Finished;
-                        OriginalPosition = OriginalDuration;
-                        Position = Duration;
-                        StopAnimation();
+                        SetupDisplayFromSyllable(newSyllableIndex);
+                        BuildLines();
+                        CheckScrollingAfterSeek(newSyllableIndex);
                         return;
                     }
                 }
-                else
+            }
+            else
+            {
+                // FIX: Applying tempo to the elapsed time
+                var tempoAdjustedElapsedMs = ApplyTempoToElapsedTime(elapsedMs);
+
+                // Update the original elapsed time (without tempo)
+                _timeSinceLastSeekMs += elapsedMs;
+                _originalElapsedTimeMs = _lastSeekPositionMs + _timeSinceLastSeekMs;
+
+                // Update position properties
+                OriginalPosition = _originalElapsedTimeMs;
+                Position = ApplyTempoToTime(_originalElapsedTimeMs);
+
+                // FIX: Using tempo-modified elapsed time for animation
+                _timeElapsedInCurrentSyllableMs += tempoAdjustedElapsedMs;
+
+                // Check syllable transitions
+                while (_currentGlobalSyllableIndex < _itemsSourceInternal.Count)
                 {
-                    break;
+                    var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
+                    var tempoAdjustedStartTime = ApplyTempoToTime(currentSyllable.StartTimeMs);
+                    var effectiveTimeMs = GetEffectiveDisplayTimeMs();
+
+                    // If we haven't reached the current syllable's start time yet
+                    if (effectiveTimeMs < tempoAdjustedStartTime)
+                    {
+                        break;
+                    }
+
+                    // Check if we need to advance to the next syllable
+                    var originalDuration = CalculateSyllableDuration(_currentGlobalSyllableIndex);
+                    var tempoAdjustedDuration = ApplyTempoToTime(originalDuration);
+                    var timeIntoSyllable = effectiveTimeMs - tempoAdjustedStartTime;
+
+                    if (timeIntoSyllable >= tempoAdjustedDuration)
+                    {
+                        _currentGlobalSyllableIndex++;
+                        syllableAdvanced = true;
+
+                        if (_currentGlobalSyllableIndex >= _itemsSourceInternal.Count)
+                        {
+                            Status = KaraokeStatus.Finished;
+                            OriginalPosition = OriginalDuration;
+                            Position = Duration;
+                            StopAnimation();
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
 
-            // If syllable advanced and there are display lines, check for scrolling
+            // If syllable advanced, check for line scrolling
             if (syllableAdvanced && _displayLines.Count > 0)
             {
                 CheckForLineScroll();

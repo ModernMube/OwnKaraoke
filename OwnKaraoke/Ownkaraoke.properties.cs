@@ -188,6 +188,50 @@ namespace OwnKaraoke
 
         #endregion
 
+        #region External Position Property
+
+        /// <summary>
+        /// Defines the UseExternalPosition property.
+        /// </summary>
+        public static readonly StyledProperty<bool> UseExternalPositionProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, bool>(nameof(UseExternalPosition), false);
+
+        /// <summary>
+        /// Gets or sets whether the karaoke position is driven by an external source
+        /// (e.g. an audio player) instead of the internal timer.
+        /// When true, call <see cref="UpdatePosition"/> on each position update from the external source.
+        /// </summary>
+        public bool UseExternalPosition
+        {
+            get => GetValue(UseExternalPositionProperty);
+            set => SetValue(UseExternalPositionProperty, value);
+        }
+
+        #endregion
+
+        #region LyricOffset Property
+
+        /// <summary>
+        /// Defines the LyricOffset property.
+        /// </summary>
+        public static readonly StyledProperty<double> LyricOffsetProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(LyricOffset), 0.0);
+
+        /// <summary>
+        /// Gets or sets the lyric display offset in milliseconds relative to the playback position.
+        /// Positive values show the lyrics earlier (ahead of the audio),
+        /// negative values show them later (behind the audio).
+        /// Example: +100 means lyrics are highlighted 100 ms before the audio reaches that point.
+        /// Example: -100 means lyrics are highlighted 100 ms after the audio passes that point.
+        /// </summary>
+        public double LyricOffset
+        {
+            get => GetValue(LyricOffsetProperty);
+            set => SetValue(LyricOffsetProperty, value);
+        }
+
+        #endregion
+
         #endregion
 
         #region Status and Position Properties

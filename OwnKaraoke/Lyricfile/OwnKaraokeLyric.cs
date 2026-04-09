@@ -97,24 +97,33 @@ namespace OwnKaraoke.Lyricfile
             try
             {
                 var lines = lrcContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                var timedElements = new List<TimedTextElement>();
+
+                // First pass: collect (lineStartTime, syllables) without ._. markers
+                var parsedLines = new List<(double lineStartTime, List<TimedTextElement> syllables)>();
 
                 foreach (var line in lines)
                 {
-                    // Skip metadata lines
-                    if (IsMetadataLine(line))
+                    if (IsMetadataLine(line) || string.IsNullOrWhiteSpace(line))
                         continue;
 
-                    // Skip empty lines
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-
-                    // Parse timing lines
-                    var lineElements = ParseTimingLine(line);
-                    timedElements.AddRange(lineElements);
+                    var result = ParseTimingLineElements(line);
+                    if (result.HasValue && result.Value.syllables.Count > 0)
+                        parsedLines.Add(result.Value);
                 }
 
-                // Sort by start time to ensure proper ordering
+                // Second pass: add ._. markers using the NEXT line's start time
+                var timedElements = new List<TimedTextElement>();
+                for (int i = 0; i < parsedLines.Count; i++)
+                {
+                    timedElements.AddRange(parsedLines[i].syllables);
+
+                    double markerTime = i + 1 < parsedLines.Count
+                        ? parsedLines[i + 1].lineStartTime
+                        : parsedLines[i].syllables.Last().StartTimeMs + 2000;
+
+                    timedElements.Add(new TimedTextElement("._.", markerTime));
+                }
+
                 return timedElements.OrderBy(e => e.StartTimeMs).ToList();
             }
             catch (Exception ex)
@@ -134,80 +143,54 @@ namespace OwnKaraoke.Lyricfile
         }
 
         /// <summary>
-        /// Parses a single timing line and extracts all timed text elements from it.
-        /// Supports both simple line timing [mm:ss.ff]text and word-level timing [mm:ss.ff]&lt;mm:ss.ff&gt;word.
+        /// Parses a single timing line and returns the line start time and syllable elements (without ._. marker).
         /// </summary>
-        /// <param name="line">The timing line to parse.</param>
-        /// <returns>A collection of TimedTextElement objects from the line.</returns>
-        private static IEnumerable<TimedTextElement> ParseTimingLine(string line)
+        private static (double lineStartTime, List<TimedTextElement> syllables)? ParseTimingLineElements(string line)
         {
             var match = TimingLinePattern.Match(line.Trim());
             if (!match.Success)
-                return Enumerable.Empty<TimedTextElement>();
+                return null;
 
             var lineStartTime = ParseTimeToMilliseconds(match.Groups[1].Value);
             if (lineStartTime < 0)
-                return Enumerable.Empty<TimedTextElement>();
+                return null;
 
             var textContent = match.Groups[2].Value.Trim();
             if (string.IsNullOrEmpty(textContent))
-                return Enumerable.Empty<TimedTextElement>();
+                return null;
 
             var elements = new List<TimedTextElement>();
 
-            // Check if this line has word-level timing (contains < and > characters)
             if (textContent.Contains('<') && textContent.Contains('>'))
             {
-                // Parse word-level timing
                 var wordMatches = WordTimingPattern.Matches(textContent);
 
                 foreach (Match wordMatch in wordMatches)
                 {
                     var wordTime = ParseTimeToMilliseconds(wordMatch.Groups[1].Value);
                     var wordText = wordMatch.Groups[2].Value;
-
-                    // Use the word-specific timing if available, otherwise use line start time
                     var finalTime = wordTime >= 0 ? wordTime : lineStartTime;
 
-                    // Add the word with proper spacing if it's not empty
                     if (!string.IsNullOrEmpty(wordText))
-                    {
                         elements.Add(new TimedTextElement(wordText.Trim() + ' ', finalTime));
-                    }
                 }
             }
             else
             {
-                // Simple line timing - split by spaces and create individual word elements
                 var words = textContent.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
                 if (words.Length == 0)
-                    return Enumerable.Empty<TimedTextElement>();
+                    return null;
 
-                // Calculate timing distribution across words
-                var baseTimePerWord = 500; // 500ms per word as default
-
+                var baseTimePerWord = 500;
                 for (int i = 0; i < words.Length; i++)
                 {
                     var wordTime = lineStartTime + (i * baseTimePerWord);
-                    var wordText = words[i];
-
-                    // Add space after word (except for last word)
-                    if (i < words.Length - 1)
-                        wordText += " ";
-
+                    var wordText = i < words.Length - 1 ? words[i] + " " : words[i];
                     elements.Add(new TimedTextElement(wordText.Trim() + ' ', wordTime));
                 }
             }
 
-            // Add line break marker after each line (except if line is empty)
-            if (elements.Count > 0)
-            {
-                var lastElementTime = elements.LastOrDefault()?.StartTimeMs ?? lineStartTime;
-                elements.Add(new TimedTextElement("._.", lastElementTime + 200)); // Add 200ms after last word
-            }
-
-            return elements;
+            return elements.Count > 0 ? (lineStartTime, elements) : null;
         }
 
         /// <summary>
@@ -311,7 +294,7 @@ namespace OwnKaraoke.Lyricfile
         /// <returns>A task representing the asynchronous operation.</returns>
         public static async Task LoadFromLrcFileAsync(this OwnKaraokeDisplay karaokeDisplay, string? lrcFilePath)
         {
-            var timedElements = await OwnKaraokeLyric.ParseFromFileAsync(lrcFilePath);
+            var timedElements = await OwnKaraokeLyric.ParseFromFileAsync(lrcFilePath!);
             karaokeDisplay.ItemsSource = timedElements;
         }
 
