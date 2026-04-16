@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	  <Authors>ModernMube</Authors>
 	  <Copyright>Copyright (c) 2025 ModernMube</Copyright>
 	  <Description>A cross platform karaoke library for .NET with Avalonia.</Description>
-	  <FileVersion>1.0.5</FileVersion>
+	  <FileVersion>1.0.6</FileVersion>
 	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <LangVersion>11</LangVersion>
@@ -26,14 +26,14 @@
 	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <Version>1.0.5</Version>
+	  <Version>1.0.6</Version>
 	  <Authors>ModernMube</Authors>
 	  <Company>Modernbit</Company>
 	  <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.12" />
+    <PackageReference Include="Avalonia" Version="12.0.1" />
     <PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
 
