@@ -13,6 +13,7 @@
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <LangVersion>11</LangVersion>
 	  <NoWarn>IDE0090</NoWarn>
+	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <PackageId>OwnKaraokeSharp</PackageId>
 	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
 	  <PackageProjectUrl>https://github.com/ModernMube/OwnKaraoke</PackageProjectUrl>
@@ -33,8 +34,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.0.1" />
-    <PackageReference Include="System.Reactive" Version="6.0.1" />
+    <PackageReference Include="Avalonia" Version="12.0.3" />
+    <PackageReference Include="System.Reactive" Version="6.1.0" />
   </ItemGroup>
 
 	<ItemGroup>
