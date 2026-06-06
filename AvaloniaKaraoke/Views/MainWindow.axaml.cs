@@ -344,7 +344,7 @@ namespace AvaloniaKaraoke.Views
         /// </summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event arguments.</param>
-        private void ProgressBar_PointerPressed(object sender, Avalonia.Input.PointerPressedEventArgs e)
+        private void ProgressBar_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
         {
             if (KaraokeControl.Duration > 0 && sender is ProgressBar progressBar)
             {
@@ -583,7 +583,7 @@ namespace AvaloniaKaraoke.Views
         /// <summary>
         /// Occurs when a property value changes.
         /// </summary>
-        public event PropertyChangedEventHandler? PropertyChanged;
+        public new event PropertyChangedEventHandler? PropertyChanged;
 
         /// <summary>
         /// Raises the PropertyChanged event for the specified property.
