@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 
 namespace OwnKaraoke
 {
@@ -66,12 +65,14 @@ namespace OwnKaraoke
                     brush ?? Brushes.White);
             }
 
-            // Simple cache size management
             if (_formattedTextCache.Count > 1000)
             {
-                var keysToRemove = _formattedTextCache.Keys.Take(200).ToArray();
-                foreach (var keyToRemove in keysToRemove)
-                    _formattedTextCache.Remove(keyToRemove);
+                int removed = 0;
+                foreach (var k in _formattedTextCache.Keys)
+                {
+                    _formattedTextCache.Remove(k);
+                    if (++removed >= 200) break;
+                }
             }
 
             _formattedTextCache[key] = formattedText;
@@ -198,7 +199,7 @@ namespace OwnKaraoke
                 line.FormattedTextLine = GetOrCreateFormattedText(_stringBuilder.ToString(), Foreground ?? Brushes.White);
                 line.LineHeight = maxLineHeight > 0 ? maxLineHeight : FontSize * 1.2;
 
-                var lastSyllable = line.Syllables.LastOrDefault();
+                var lastSyllable = line.Syllables.Count > 0 ? line.Syllables[^1] : null;
                 line.LineWidth = lastSyllable != null ? lastSyllable.XOffsetInLine + lastSyllable.Width : 0;
 
                 return line;

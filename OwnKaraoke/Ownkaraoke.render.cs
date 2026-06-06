@@ -38,11 +38,9 @@ namespace OwnKaraoke
 
             if (line.Opacity < 1.0)
             {
-                using (context.PushOpacity(line.Opacity))
-                {
-                    foreach (var syllable in line.Syllables)
-                        RenderSyllable(context, syllable, lineX, line.CurrentY);
-                }
+                using var _ = context.PushOpacity(line.Opacity);
+                foreach (var syllable in line.Syllables)
+                    RenderSyllable(context, syllable, lineX, line.CurrentY);
             }
             else
             {
@@ -125,10 +123,8 @@ namespace OwnKaraoke
             if (highlightWidth > 0 && HighlightBrush != null)
             {
                 var highlightText = GetOrCreateFormattedText(syllable.OriginalElement.Text, HighlightBrush);
-                using (context.PushClip(new Rect(origin.X, origin.Y, highlightWidth, syllable.Height)))
-                {
-                    context.DrawText(highlightText, origin);
-                }
+                using var _ = context.PushClip(new Rect(origin.X, origin.Y, highlightWidth, syllable.Height));
+                context.DrawText(highlightText, origin);
             }
         }
 

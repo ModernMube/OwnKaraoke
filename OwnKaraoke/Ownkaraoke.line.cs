@@ -13,7 +13,9 @@ namespace OwnKaraoke
         /// </summary>
         private void BuildLines()
         {
-            var existingLines = _displayLines.ToList();
+            _existingLinesBuffer.Clear();
+            _existingLinesBuffer.AddRange(_displayLines);
+            var existingLines = _existingLinesBuffer;
             var isScrollAnimation = _isAnimatingLines && existingLines.Count > 0;
 
             _displayLines.Clear();

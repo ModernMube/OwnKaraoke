@@ -31,7 +31,7 @@ namespace OwnKaraoke
         /// <param name="sender">The timer object.</param>
         /// <param name="e">The event arguments.</param>
         private void OnTimerTick(object? sender, EventArgs e) =>
-            OnFrame(TimeSpan.FromSeconds(Environment.TickCount / 1000.0));
+            OnFrame(TimeSpan.FromMilliseconds(Environment.TickCount64));
 
         /// <summary>
         /// Stops the animation timer.

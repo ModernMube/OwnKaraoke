@@ -204,12 +204,16 @@ namespace OwnKaraoke
         /// <returns>Syllable index.</returns>
         private int FindSyllableAtPosition(double originalPositionMs)
         {
-            for (int i = 0; i < _itemsSourceInternal.Count; i++)
+            int lo = 0, hi = _itemsSourceInternal.Count - 1;
+            while (lo < hi)
             {
-                if (_itemsSourceInternal[i].StartTimeMs > originalPositionMs)
-                    return Math.Max(0, i - 1);
+                int mid = (lo + hi + 1) >> 1;
+                if (_itemsSourceInternal[mid].StartTimeMs <= originalPositionMs)
+                    lo = mid;
+                else
+                    hi = mid - 1;
             }
-            return Math.Max(0, _itemsSourceInternal.Count - 1);
+            return lo;
         }
 
         /// <summary>

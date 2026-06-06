@@ -53,6 +53,16 @@ namespace OwnKaraoke
         private readonly System.Text.StringBuilder _stringBuilder = new();
 
         /// <summary>
+        /// Reusable buffer to avoid ToList() allocation when rebuilding lines.
+        /// </summary>
+        private readonly List<KaraokeLine> _existingLinesBuffer = new();
+
+        /// <summary>
+        /// Cached tempo multiplier – updated only when Tempo changes.
+        /// </summary>
+        private double _tempoMultiplier = 1.0;
+
+        /// <summary>
         /// Subscription to the animation timer.
         /// </summary>
         private IDisposable? _animationSubscription;
@@ -219,7 +229,7 @@ namespace OwnKaraoke
         /// <param name="newTempo">The new tempo value.</param>
         private void HandleTempoChanged(double newTempo)
         {
-            // Update the total duration for the new tempo
+            UpdateTempoMultiplierCache();
             UpdateDurationForTempo();
 
             // If playback is in progress, we need to resynchronize the timing
@@ -358,6 +368,7 @@ namespace OwnKaraoke
         {
             base.OnAttachedToVisualTree(e);
             IsAttachedToVisualTree = true;
+            UpdateTempoMultiplierCache();
 
             _itemsSourceInternal.Clear();
             if (ItemsSource != null)
@@ -386,16 +397,10 @@ namespace OwnKaraoke
         /// Calculates the tempo multiplier from the Tempo property.
         /// </summary>
         /// <returns>The tempo multiplier (1.0 = normal speed, 1.1 = 10% faster, 0.9 = 10% slower)</returns>
-        private double GetTempoMultiplier()
-        {
-            // Tempo range: -2.0 to +2.0
-            // Each 0.1 = 10% change
-            // Formula: 1.0 + (Tempo * 1.0) = multiplier
-            var multiplier = 1.0 + Tempo;
+        private double GetTempoMultiplier() => _tempoMultiplier;
 
-            // Safety check: not zero or negative
-            return Math.Max(0.1, multiplier);
-        }
+        private void UpdateTempoMultiplierCache() =>
+            _tempoMultiplier = Math.Max(0.1, 1.0 + Tempo);
 
         /// <summary>
         /// Applies tempo scaling to a time value.

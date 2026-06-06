@@ -1,5 +1,4 @@
 ﻿using Avalonia.Controls;
-using System.Linq;
 
 namespace OwnKaraoke
 {
@@ -58,14 +57,19 @@ namespace OwnKaraoke
                 // 3b. Normal lines: 1/3 rule, but minimum 2 syllables
                 if (syllablesInSecondLine >= 4)
                 {
-                    var currentSyllableInSecondLine = secondLine.Syllables.FirstOrDefault(s =>
-                        s.GlobalIndex == _currentGlobalSyllableIndex);
-
-                    if (currentSyllableInSecondLine != null)
+                    var syllableIndexInLine = -1;
+                    for (int i = 0; i < syllablesInSecondLine; i++)
                     {
-                        var syllableIndexInLine = secondLine.Syllables.IndexOf(currentSyllableInSecondLine);
-                        var oneThirdPosition = Math.Max(1, syllablesInSecondLine / 3.0);
+                        if (secondLine.Syllables[i].GlobalIndex == _currentGlobalSyllableIndex)
+                        {
+                            syllableIndexInLine = i;
+                            break;
+                        }
+                    }
 
+                    if (syllableIndexInLine >= 0)
+                    {
+                        var oneThirdPosition = Math.Max(1, syllablesInSecondLine / 3.0);
                         return syllableIndexInLine >= oneThirdPosition;
                     }
                 }
@@ -106,14 +110,19 @@ namespace OwnKaraoke
                 var secondLine = _displayLines[1];
                 if (targetSyllableIndex >= secondLine.FirstSyllableGlobalIndex)
                 {
-                    var syllableInSecondLine = secondLine.Syllables.FirstOrDefault(s =>
-                        s.GlobalIndex == targetSyllableIndex);
-
-                    if (syllableInSecondLine != null)
+                    var syllablesInSecondLine = secondLine.Syllables.Count;
+                    var syllableIndexInLine = -1;
+                    for (int i = 0; i < syllablesInSecondLine; i++)
                     {
-                        var syllableIndexInLine = secondLine.Syllables.IndexOf(syllableInSecondLine);
-                        var syllablesInSecondLine = secondLine.Syllables.Count;
+                        if (secondLine.Syllables[i].GlobalIndex == targetSyllableIndex)
+                        {
+                            syllableIndexInLine = i;
+                            break;
+                        }
+                    }
 
+                    if (syllableIndexInLine >= 0)
+                    {
                         // For short lines (< 4 syllables) or if too far back in the line
                         if (syllablesInSecondLine < 4 ||
                             syllableIndexInLine >= Math.Max(1, syllablesInSecondLine / 3.0))
@@ -174,7 +183,9 @@ namespace OwnKaraoke
         /// </summary>
         private void RebuildAllLinesAfterScroll()
         {
-            var existingLines = _displayLines.ToList();
+            _existingLinesBuffer.Clear();
+            _existingLinesBuffer.AddRange(_displayLines);
+            var existingLines = _existingLinesBuffer;
             _displayLines.Clear();
 
             var availableWidth = Bounds.Width;
@@ -213,38 +224,6 @@ namespace OwnKaraoke
 
             InvalidateMeasure();
             InvalidateVisual();
-        }
-
-        /// <summary>
-        /// Determines if the highlight is at approximately one-third of the second line.
-        /// Improved version: better handles short lines.
-        /// </summary>
-        /// <param name="secondLine">The second line.</param>
-        /// <returns>True if the highlight is at the one-third position; otherwise false.</returns>
-        private bool IsHighlightInSecondLineAtOneThird(KaraokeLine secondLine)
-        {
-            if (_currentGlobalSyllableIndex < secondLine.FirstSyllableGlobalIndex ||
-                _currentGlobalSyllableIndex > secondLine.LastSyllableGlobalIndex)
-                return false;
-
-            var totalSyllablesInSecondLine = secondLine.Syllables.Count;
-            if (totalSyllablesInSecondLine == 0)
-                return false;
-
-            // For short lines (less than 4 syllables), we scroll at the first syllable
-            if (totalSyllablesInSecondLine < 4)
-                return true;
-
-            var currentSyllableInSecondLine = secondLine.Syllables.FirstOrDefault(s =>
-                s.GlobalIndex == _currentGlobalSyllableIndex);
-
-            if (currentSyllableInSecondLine == null)
-                return false;
-
-            var syllableIndexInLine = secondLine.Syllables.IndexOf(currentSyllableInSecondLine);
-            var oneThirdPosition = Math.Max(1, totalSyllablesInSecondLine / 3.0);
-
-            return syllableIndexInLine >= oneThirdPosition;
         }
 
         /// <summary>
