@@ -27,7 +27,7 @@
 	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <Version>1.0.6</Version>
+	  <Version>1.0.7</Version>
 	  <Authors>ModernMube</Authors>
 	  <Company>Modernbit</Company>
 	  <PlatformTarget>AnyCPU</PlatformTarget>
