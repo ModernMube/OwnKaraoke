@@ -28,6 +28,11 @@ namespace OwnKaraoke
         /// </summary>
         private const double OPACITY_ANIMATION_SPEED = 0.00076;
 
+        /// <summary>
+        /// Duration of the HighlightBrush → AlreadySungBrush color transition in milliseconds.
+        /// </summary>
+        private const double BRUSH_TRANSITION_DURATION_MS = 400.0;
+
         #endregion
 
         #region Private Fields
@@ -142,6 +147,12 @@ namespace OwnKaraoke
         /// Only used when <see cref="UseExternalPosition"/> is true.
         /// </summary>
         private double _externalPositionMs;
+
+        /// <summary>
+        /// The effective display time (ms) when the last syllable transitioned to "already sung".
+        /// -1 means no active transition.
+        /// </summary>
+        private double _syllableTransitionEffectiveTimeMs = -1.0;
 
         #endregion
 
@@ -347,6 +358,7 @@ namespace OwnKaraoke
             _lastSeekPositionMs = 0;
             _timeSinceLastSeekMs = 0;
             _externalPositionMs = 0;
+            _syllableTransitionEffectiveTimeMs = -1.0;
 
             BuildLines();
 

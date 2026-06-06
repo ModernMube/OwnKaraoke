@@ -81,6 +81,17 @@ namespace OwnKaraoke
 
             if (syllable.GlobalIndex < _currentGlobalSyllableIndex)
             {
+                if (syllable.GlobalIndex == _currentGlobalSyllableIndex - 1 && _syllableTransitionEffectiveTimeMs >= 0)
+                {
+                    var t = Math.Clamp(
+                        (GetEffectiveDisplayTimeMs() - _syllableTransitionEffectiveTimeMs) / BRUSH_TRANSITION_DURATION_MS,
+                        0.0, 1.0);
+                    if (t < 1.0)
+                    {
+                        RenderTransitioningSyllable(context, syllable, origin, t);
+                        return;
+                    }
+                }
                 RenderAlreadySungSyllable(context, syllable, origin);
             }
             else if (syllable.GlobalIndex == _currentGlobalSyllableIndex)
@@ -90,6 +101,24 @@ namespace OwnKaraoke
             else
             {
                 RenderFutureSyllable(context, syllable, origin);
+            }
+        }
+
+        /// <summary>
+        /// Renders the most recently completed syllable with a smooth color transition
+        /// from HighlightBrush to AlreadySungBrush.
+        /// </summary>
+        private void RenderTransitioningSyllable(DrawingContext context, SyllableMetrics syllable, Point origin, double t)
+        {
+            var alreadySungText = GetOrCreateFormattedText(syllable.OriginalElement.Text,
+                AlreadySungBrush ?? Foreground ?? Brushes.White);
+            context.DrawText(alreadySungText, origin);
+
+            if (HighlightBrush != null)
+            {
+                var highlightText = GetOrCreateFormattedText(syllable.OriginalElement.Text, HighlightBrush);
+                using var _ = context.PushOpacity(1.0 - t);
+                context.DrawText(highlightText, origin);
             }
         }
 

@@ -75,8 +75,11 @@ namespace OwnKaraoke
 
             // Only redraw if something visually changed:
             // - line position/opacity is animating, or
+            // - a brush transition is in progress, or
             // - the current syllable highlight is active (elapsed time >= syllable start)
             bool needsRedraw = _isAnimatingLines;
+            if (!needsRedraw && _syllableTransitionEffectiveTimeMs >= 0)
+                needsRedraw = GetEffectiveDisplayTimeMs() - _syllableTransitionEffectiveTimeMs < BRUSH_TRANSITION_DURATION_MS;
             if (!needsRedraw && _currentGlobalSyllableIndex < _itemsSourceInternal.Count)
             {
                 var currentSyllable = _itemsSourceInternal[_currentGlobalSyllableIndex];
@@ -216,6 +219,7 @@ namespace OwnKaraoke
                     // Small forward jumps (e.g. skipping a ._. marker) are treated as normal playback.
                     if ((isBackwardJump || isLargeJump) && IsAttachedToVisualTree)
                     {
+                        _syllableTransitionEffectiveTimeMs = -1.0;
                         SetupDisplayFromSyllable(newSyllableIndex);
                         BuildLines();
                         CheckScrollingAfterSeek(newSyllableIndex);
@@ -278,10 +282,12 @@ namespace OwnKaraoke
                 }
             }
 
-            // If syllable advanced, check for line scrolling
-            if (syllableAdvanced && _displayLines.Count > 0)
+            // If syllable advanced, record transition start time and check for line scrolling
+            if (syllableAdvanced)
             {
-                CheckForLineScroll();
+                _syllableTransitionEffectiveTimeMs = GetEffectiveDisplayTimeMs();
+                if (_displayLines.Count > 0)
+                    CheckForLineScroll();
             }
         }
 

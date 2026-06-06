@@ -8,7 +8,7 @@
 	  <Authors>ModernMube</Authors>
 	  <Copyright>Copyright (c) 2025 ModernMube</Copyright>
 	  <Description>A cross platform karaoke library for .NET with Avalonia.</Description>
-	  <FileVersion>1.0.7</FileVersion>
+	  <FileVersion>1.0.8</FileVersion>
 	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  <LangVersion>11</LangVersion>
@@ -27,7 +27,7 @@
 	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <Version>1.0.7</Version>
+	  <Version>1.0.8</Version>
 	  <Authors>ModernMube</Authors>
 	  <Company>Modernbit</Company>
 	  <PlatformTarget>AnyCPU</PlatformTarget>
