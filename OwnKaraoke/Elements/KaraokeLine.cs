@@ -11,7 +11,7 @@ namespace OwnKaraoke
         /// <summary>
         /// Gets the collection of syllables in this line.
         /// </summary>
-        public List<SyllableMetrics> Syllables { get; } = new();
+        public List<SyllableMetrics> Syllables { get; } = new(16);
 
         /// <summary>
         /// Gets or sets the formatted text representation of the entire line.

@@ -67,12 +67,15 @@ namespace OwnKaraoke
 
             if (_formattedTextCache.Count > 1000)
             {
-                int removed = 0;
+                var toEvict = new FormattedTextKey[200];
+                int n = 0;
                 foreach (var k in _formattedTextCache.Keys)
                 {
-                    _formattedTextCache.Remove(k);
-                    if (++removed >= 200) break;
+                    toEvict[n++] = k;
+                    if (n == 200) break;
                 }
+                for (int i = 0; i < n; i++)
+                    _formattedTextCache.Remove(toEvict[i]);
             }
 
             _formattedTextCache[key] = formattedText;

@@ -243,22 +243,10 @@ namespace OwnKaraoke
             AvaloniaProperty.Register<OwnKaraokeDisplay, KaraokeStatus>(nameof(Status), KaraokeStatus.Idle);
 
         /// <summary>
-        /// Defines the Position property.
-        /// </summary>
-        public static readonly StyledProperty<double> PositionProperty =
-            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(Position), 0.0);
-
-        /// <summary>
         /// Defines the Duration property.
         /// </summary>
         public static readonly StyledProperty<double> DurationProperty =
             AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(Duration), 0.0);
-
-        /// <summary>
-        /// Defines the OriginalPosition property.
-        /// </summary>
-        public static readonly StyledProperty<double> OriginalPositionProperty =
-            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(OriginalPosition), 0.0);
 
         /// <summary>
         /// Defines the OriginalDuration property.
@@ -280,8 +268,8 @@ namespace OwnKaraoke
         /// </summary>
         public double Position
         {
-            get => GetValue(PositionProperty);
-            private set => SetValue(PositionProperty, value);
+            get => _position;
+            private set => _position = value;
         }
 
         /// <summary>
@@ -298,8 +286,8 @@ namespace OwnKaraoke
         /// </summary>
         public double OriginalPosition
         {
-            get => GetValue(OriginalPositionProperty);
-            private set => SetValue(OriginalPositionProperty, value);
+            get => _originalPosition;
+            private set => _originalPosition = value;
         }
 
         /// <summary>

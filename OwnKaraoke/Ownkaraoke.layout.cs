@@ -1,10 +1,5 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OwnKaraoke
 {
@@ -19,13 +14,19 @@ namespace OwnKaraoke
         /// <returns>The desired size.</returns>
         protected override Size MeasureOverride(Size availableSize)
         {
-            var calculatedHeight = _displayLines.Sum(l => l.LineHeight);
-            var calculatedWidth = _displayLines.Count > 0 ? _displayLines.Max(l => l.LineWidth) : 0;
+            double calculatedHeight = 0;
+            double calculatedWidth  = 0;
+            foreach (var line in _displayLines)
+            {
+                calculatedHeight += line.LineHeight;
+                if (line.LineWidth > calculatedWidth)
+                    calculatedWidth = line.LineWidth;
+            }
 
             if (calculatedHeight == 0 && VisibleLinesCount > 0 && _itemsSourceInternal.Count > 0)
             {
                 calculatedHeight = VisibleLinesCount * (FontSize * 1.2);
-                calculatedWidth = 0;
+                calculatedWidth  = 0;
             }
 
             return new Size(calculatedWidth, calculatedHeight);

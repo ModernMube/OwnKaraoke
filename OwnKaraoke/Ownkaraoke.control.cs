@@ -1,10 +1,5 @@
 ﻿using Avalonia.Controls;
-using Avalonia.Threading;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OwnKaraoke
 {
@@ -305,7 +300,7 @@ namespace OwnKaraoke
                 return;
             }
 
-            var lastElement = _itemsSourceInternal.LastOrDefault();
+            var lastElement = _itemsSourceInternal.Count > 0 ? _itemsSourceInternal[^1] : null;
             if (lastElement != null)
             {
                 var lastSyllableDuration = CalculateLastSyllableDuration();

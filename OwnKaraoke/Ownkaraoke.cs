@@ -154,6 +154,9 @@ namespace OwnKaraoke
         /// </summary>
         private double _syllableTransitionEffectiveTimeMs = -1.0;
 
+        private double _position;
+        private double _originalPosition;
+
         #endregion
 
         #region Constructor and Initialization
