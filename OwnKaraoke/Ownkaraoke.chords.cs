@@ -82,7 +82,18 @@ namespace OwnKaraoke
             var lineEnd = GetLineEndTime(line);
             var minX = double.NegativeInfinity;
 
-            for (var i = FindFirstChordFrom(lineStart); i < _chordsInternal.Count; i++)
+            var first = FindFirstChordFrom(lineStart);
+
+            // A chord held over from the previous line still has to be readable here,
+            // otherwise the singer sees nothing until the next change.
+            if (first > 0 && _chordsInternal[first - 1].StartTimeMs < lineStart)
+            {
+                var carried = GetOrCreateChordText(_chordsInternal[first - 1].Chord);
+                line.Chords.Add(new ChordLabel(0.0, carried));
+                minX = carried.Width + CHORD_GAP_PX;
+            }
+
+            for (var i = first; i < _chordsInternal.Count; i++)
             {
                 var chord = _chordsInternal[i];
                 if (chord.StartTimeMs >= lineEnd)
