@@ -8,6 +8,7 @@ A high-performance, cross-platform karaoke text display control for Avalonia UI 
 ## Features
 
 - **Syllable-level highlighting** - Progressive text highlighting synchronized with timing data
+- **Chord display** - Optional chord row above the lyrics, positioned over the syllable being sung
 - **Smooth scrolling animations** - Fluid line transitions with customizable animation speeds
 - **Real-time tempo control** - Adjust playback speed from -200% to +200% during playback
 - **External position mode** - Sync display to any external audio player by feeding the current position
@@ -111,6 +112,53 @@ KaraokeControl.Tempo = 0.0; // Normal speed
 // Start playback
 KaraokeControl.Start();
 ```
+
+## Chord Display
+
+The control can show a chord row above the lyrics. Chords are fed in through the `ChordSource` property as `TimedChordElement` records and each label is hung over the syllable that is being sung when the chord starts.
+
+The feature is entirely opt-in: while `ChordSource` is `null` (or empty) there is no chord row and no extra line height, so the display behaves exactly as it did before.
+
+### Basic usage
+
+```csharp
+KaraokeControl.ItemsSource = karaokeData;
+
+KaraokeControl.ChordSource = new List<TimedChordElement>
+{
+    new("Am", 0),
+    new("F", 2000),
+    new("C", 5000),
+    new("G7", 7000)
+};
+
+KaraokeControl.Start();
+```
+
+```xml
+<karaoke:OwnKaraokeDisplay x:Name="KaraokeControl"
+                          VisibleLinesCount="3"
+                          FontSize="28"
+                          TextAlignment="Center"
+                          ChordBrush="Orange"
+                          ChordFontScale="0.45" />
+```
+
+### Positioning rules
+
+- A chord is drawn above the syllable that has already started at the chord's timestamp.
+- Labels that would overlap are pushed to the right, keeping a small gap between them, instead of being drawn on top of each other.
+- A chord that started on an earlier line and is still sounding is repeated at the beginning of the next line, so the player always sees the current chord.
+- The chord row has the same height in every line, so the lyrics keep an even vertical rhythm.
+
+### Styling
+
+| Property | Description |
+|----------|-------------|
+| `ChordBrush` | Colour of the chord labels (default `Orange`) |
+| `ChordFontScale` | Label size as a fraction of `FontSize`, must be in the `0–1` range (default `0.45`) |
+
+Both properties can be changed at runtime; the lines are rebuilt automatically.
 
 ## External Position Mode
 
@@ -262,6 +310,15 @@ public record TimedTextElement(string Text, double StartTimeMs);
 - **Text**: The text content for the syllable/word
 - **StartTimeMs**: Absolute time in milliseconds when highlighting should begin
 
+Chords use the matching `TimedChordElement` record:
+
+```csharp
+public record TimedChordElement(string Chord, double StartTimeMs);
+```
+
+- **Chord**: The chord label as it should appear, e.g. `"Am7"`
+- **StartTimeMs**: Absolute time in milliseconds when the chord begins
+
 ### Special Markers
 
 - `"._."` - Line break marker to force a new line
@@ -347,6 +404,7 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `ItemsSource` | `IEnumerable<TimedTextElement>?` | `null` | Collection of timed text elements |
+| `ChordSource` | `IEnumerable<TimedChordElement>?` | `null` | Optional chords shown above the lyrics; no chord row while `null` |
 | `VisibleLinesCount` | `int` | `3` | Number of lines visible simultaneously |
 
 ### Playback Properties
@@ -370,6 +428,7 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | `FontWeight` | `FontWeight` | Inherited | Weight of the font (Bold, Normal, etc.) |
 | `FontStyle` | `FontStyle` | Inherited | Style of the font (Italic, Normal, etc.) |
 | `TextAlignment` | `TextAlignment` | `Left` | Horizontal alignment of text lines |
+| `ChordFontScale` | `double` | `0.45` | Chord label size relative to `FontSize` (0–1) |
 
 ### Color Properties
 
@@ -378,6 +437,7 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | `Foreground` | `IBrush?` | Inherited | Color for unsung text |
 | `HighlightBrush` | `IBrush?` | `Yellow` | Color for currently highlighted text |
 | `AlreadySungBrush` | `IBrush?` | `LightGoldenrodYellow` | Color for already sung text |
+| `ChordBrush` | `IBrush?` | `Orange` | Color of the chord labels |
 
 ## Methods
 
@@ -409,7 +469,8 @@ karaokeControl.UpdatePosition(audioPlayer.CurrentPositionMs);
 
 - **`OwnKaraokeDisplay`** - Main control class with rendering and animation logic
 - **`TimedTextElement`** - Record representing a single timed text element
-- **`KaraokeLine`** - Internal class representing a display line with syllables
+- **`TimedChordElement`** - Record representing a chord and the moment it starts sounding
+- **`KaraokeLine`** - Internal class representing a display line with syllables and its chord row
 - **`SyllableMetrics`** - Internal class containing syllable positioning and formatting
 - **`KaraokeStatus`** - Enum for playback status (Idle, Playing, Paused, Finished)
 - **`OwnKaraokeLyric`** - Static parser class for LRC files
@@ -427,6 +488,7 @@ The control implements intelligent scrolling with multiple conditions:
 #### Performance Optimizations
 - **FormattedText caching** - Reduces text rendering overhead
 - **Typeface caching** - Avoids repeated typeface creation
+- **Chord label caching** - Chord labels are measured once per line rebuild, rendering is pure draw calls
 - **Intelligent cache management** - Automatic cleanup when cache grows too large
 - **Efficient string building** - Reusable StringBuilder for line construction
 
@@ -498,7 +560,9 @@ public partial class MainWindow : Window
                           HighlightBrush="#FF00FF"
                           AlreadySungBrush="#FFD700"
                           Foreground="#FFFFFF"
-                          Background="#000000" />
+                          Background="#000000"
+                          ChordBrush="#00E5FF"
+                          ChordFontScale="0.5" />
 ```
 
 ## Animation Behavior
@@ -517,7 +581,7 @@ public partial class MainWindow : Window
 - Dynamic line wrapping based on available width
 - Intelligent syllable fitting with overflow handling
 - Support for line break markers (`"._."`)
-- Automatic height and width calculation
+- Automatic height and width calculation, including the chord row when chords are present
 
 ## Technical Details
 
@@ -573,6 +637,12 @@ double adjustedElapsed = elapsedTime * multiplier;   // Faster tempo = more elap
 - Call `UpdatePosition()` frequently enough (every 30–100 ms is sufficient)
 - Pass the position in **milliseconds** (original time, without any tempo offset)
 - Verify your audio player's position API returns milliseconds and not seconds or ticks
+
+**Chords not showing up**
+- Make sure `ChordSource` is set and is not an empty collection
+- Chord timestamps must be in the same time base (milliseconds, original time) as `ItemsSource`
+- A chord is only drawn if its time falls inside a line's time range — check that the timestamps line up with the lyrics
+- `ChordFontScale` must be greater than 0 and at most 1, otherwise the value is rejected
 
 **LRC file not loading**
 - Verify the LRC file exists and is accessible
