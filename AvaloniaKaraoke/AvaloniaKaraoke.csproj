@@ -16,8 +16,12 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
     <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1" />
-    <PackageReference Include="OwnKaraokeSharp" Version="1.0.5" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--The demo runs against the sources in this repo, not the published package.-->
+    <ProjectReference Include="..\OwnKaraoke\OwnKaraoke.csproj" />
   </ItemGroup>
 
 </Project>

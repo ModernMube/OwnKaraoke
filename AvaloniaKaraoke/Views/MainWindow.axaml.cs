@@ -24,7 +24,12 @@ namespace AvaloniaKaraoke.Views
         /// Collection of timed text elements representing the karaoke lyrics.
         /// </summary>
         private ObservableCollection<TimedTextElement> _karaokeLyrics = new();
-        
+
+        /// <summary>
+        /// Chords of the song currently loaded. Empty when the song has none.
+        /// </summary>
+        private List<TimedChordElement> _songChords = new List<TimedChordElement>();
+
         /// <summary>
         /// Timer for updating UI elements at regular intervals.
         /// </summary>
@@ -34,11 +39,6 @@ namespace AvaloniaKaraoke.Views
         /// Subscription for monitoring karaoke status changes.
         /// </summary>
         private IDisposable? _statusSubscription;
-        
-        /// <summary>
-        /// Subscription for monitoring position changes in the karaoke playback.
-        /// </summary>
-        private IDisposable? _positionSubscription;
         
         /// <summary>
         /// Subscription for monitoring duration changes in the karaoke playback.
@@ -149,9 +149,7 @@ namespace AvaloniaKaraoke.Views
             _statusSubscription = KaraokeControl.GetObservable(OwnKaraokeDisplay.StatusProperty)
                 .Subscribe(OnKaraokeStatusChanged);
 
-            // Subscribe to position changes
-            _positionSubscription = KaraokeControl.GetObservable(OwnKaraokeDisplay.PositionProperty)
-                .Subscribe(OnPositionChanged);
+            // Position is a plain property now, so the status timer polls it instead
 
             // Subscribe to duration changes
             _durationSubscription = KaraokeControl.GetObservable(OwnKaraokeDisplay.DurationProperty)
@@ -184,16 +182,13 @@ namespace AvaloniaKaraoke.Views
         /// <param name="position">The new position in milliseconds.</param>
         private void OnPositionChanged(double position)
         {
-            Dispatcher.UIThread.Post(() =>
-            {
-                var timeSpan = TimeSpan.FromMilliseconds(position);
-                CurrentTimeText.Text = $"{timeSpan:mm\\:ss}";
+            var timeSpan = TimeSpan.FromMilliseconds(position);
+            CurrentTimeText.Text = $"{timeSpan:mm\\:ss}";
 
-                if (KaraokeControl.Duration > 0)
-                {
-                    ProgressBar.Value = (position / KaraokeControl.Duration) * 100;
-                }
-            });
+            if (KaraokeControl.Duration > 0)
+            {
+                ProgressBar.Value = (position / KaraokeControl.Duration) * 100;
+            }
         }
 
         /// <summary>
@@ -385,7 +380,7 @@ namespace AvaloniaKaraoke.Views
         /// <returns>A task representing the asynchronous operation.</returns>
         private async Task LoadSongLyrics(string songName)
         {
-            KaraokeLyrics.Clear();
+            KaraokeLyrics = new ObservableCollection<TimedTextElement>();
 
             List<TimedTextElement> lyrics;
 
@@ -410,7 +405,84 @@ namespace AvaloniaKaraoke.Views
             {
                 KaraokeLyrics.Add(lyric);
             }
+
+            _songChords = _chordsFor(songName);
+            _applyChords();
         }
+
+        /// <summary>
+        /// Hands the chords over to the control — or nothing at all when the user turned
+        /// the chord row off. That is all it takes to switch the feature off.
+        /// </summary>
+        private void _applyChords()
+        {
+            KaraokeControl.ChordSource = ChordToggle.IsChecked == true && _songChords.Count > 0
+                ? new List<TimedChordElement>(_songChords)
+                : null;
+        }
+
+        /// <summary>
+        /// Chords of the built-in songs. A lyric file loaded from disk carries no chords,
+        /// so it simply gets an empty list.
+        /// </summary>
+        private List<TimedChordElement> _chordsFor(string songName)
+        {
+            if (songName == "Hallelujah - Leonard Cohen")
+            {
+                return new List<TimedChordElement>
+                {
+                    new("C", 0),
+                    new("Am", 2600),
+                    new("C", 4400),
+                    new("Am", 6800),
+                    new("F", 9500),
+                    new("G", 11300),
+                    new("C", 13100),
+                    new("G", 14400),
+                    new("C", 15400),
+                    new("F", 16600),
+                    new("G", 18400),
+                    new("C", 19600)
+                };
+            }
+
+            if (songName == "Bohemian Rhapsody - Queen")
+            {
+                return new List<TimedChordElement>
+                {
+                    new("Bb", 0),
+                    new("C7", 1200),
+                    new("F", 2600),
+                    new("Cm", 4100),
+                    new("F7", 5700),
+                    new("Bb", 6800),
+                    new("Cm", 8100),
+                    new("F", 9700)
+                };
+            }
+
+            if (songName == "Hotel California - Eagles")
+            {
+                return new List<TimedChordElement>
+                {
+                    new("Bm", 0),
+                    new("F#", 1600),
+                    new("A", 2800),
+                    new("E", 4700),
+                    new("G", 5500),
+                    new("D", 6400),
+                    new("Em", 7400),
+                    new("F#", 9100)
+                };
+            }
+
+            return new List<TimedChordElement>();
+        }
+
+        /// <summary>
+        /// Chord row checkbox.
+        /// </summary>
+        private void ChordToggle_Changed(object? sender, RoutedEventArgs e) => _applyChords();
 
         /// <summary>
         /// Gets the lyrics for "Hallelujah" by Leonard Cohen.
@@ -556,6 +628,8 @@ namespace AvaloniaKaraoke.Views
         /// <param name="e">The event arguments.</param>
         private void UpdateUI(object? sender, EventArgs e)
         {
+            OnPositionChanged(KaraokeControl.Position);
+
             // Update debug information
             if (KaraokeControl.Status != KaraokeStatus.Idle)
             {
@@ -602,7 +676,6 @@ namespace AvaloniaKaraoke.Views
         {
             _statusTimer?.Stop();
             _statusSubscription?.Dispose();
-            _positionSubscription?.Dispose();
             _durationSubscription?.Dispose();
             base.OnClosed(e);
         }

@@ -40,6 +40,8 @@
                                 Foreground="White"
                                 HighlightBrush="#FF10A0FF"
                                 AlreadySungBrush="#FF10A0FF"
+                                ChordBrush="#FFFFC107"
+                                ChordFontScale="0.45"
                                 TextAlignment="Center"/>
 		</Border>
 
@@ -103,6 +105,14 @@
                       MinWidth="200"
                       FontSize="14"
                       SelectionChanged="SongSelector_SelectionChanged"/>
+
+			<!-- Chord row on/off -->
+			<CheckBox Name="ChordToggle"
+                      Content="🎸 Chords"
+                      IsChecked="True"
+                      FontSize="14"
+                      VerticalAlignment="Center"
+                      IsCheckedChanged="ChordToggle_Changed"/>
 
 		</StackPanel>
 
