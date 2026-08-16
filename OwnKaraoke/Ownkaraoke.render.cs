@@ -35,17 +35,33 @@ namespace OwnKaraoke
                 return;
 
             var lineX = CalculateLineX(line.LineWidth);
+            var textY = line.CurrentY + line.ChordRowHeight;
 
             if (line.Opacity < 1.0)
             {
                 using var _ = context.PushOpacity(line.Opacity);
+                RenderChords(context, line, lineX);
                 foreach (var syllable in line.Syllables)
-                    RenderSyllable(context, syllable, lineX, line.CurrentY);
+                    RenderSyllable(context, syllable, lineX, textY);
             }
             else
             {
+                RenderChords(context, line, lineX);
                 foreach (var syllable in line.Syllables)
-                    RenderSyllable(context, syllable, lineX, line.CurrentY);
+                    RenderSyllable(context, syllable, lineX, textY);
+            }
+        }
+
+        /// <summary>
+        /// The chord row above the line. Everything was measured at line build time, so
+        /// this is nothing but DrawText calls.
+        /// </summary>
+        private void RenderChords(DrawingContext context, KaraokeLine line, double lineX)
+        {
+            for (var i = 0; i < line.Chords.Count; i++)
+            {
+                var chord = line.Chords[i];
+                context.DrawText(chord.Text, new Point(lineX + chord.X, line.CurrentY));
             }
         }
 

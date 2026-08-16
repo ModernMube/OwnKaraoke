@@ -12,6 +12,14 @@ namespace OwnKaraoke
     public record TimedTextElement(string Text, double StartTimeMs);
 
     /// <summary>
+    /// A chord name and the moment it starts sounding. Drawn above the syllable that is
+    /// being sung at that moment.
+    /// </summary>
+    /// <param name="Chord">The chord label as it should appear, e.g. "Am7"</param>
+    /// <param name="StartTimeMs">Absolute time in milliseconds when the chord begins</param>
+    public record TimedChordElement(string Chord, double StartTimeMs);
+
+    /// <summary>
     /// Key for FormattedText caching to optimize text rendering performance.
     /// </summary>
     internal readonly struct FormattedTextKey : IEquatable<FormattedTextKey>

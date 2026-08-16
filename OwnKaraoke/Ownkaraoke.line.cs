@@ -25,6 +25,8 @@ namespace OwnKaraoke
                 return;
             }
 
+            UpdateChordRowHeight();
+
             var availableWidth = Bounds.Width;
             var actualFixedSpaceWidth = FontSize * FIXED_SPACE_WIDTH_FACTOR;
             var currentSyllableIdx = _firstSyllableIndexForLineBuilding;

@@ -16,6 +16,25 @@ namespace OwnKaraoke
             AvaloniaProperty.Register<OwnKaraokeDisplay, IEnumerable<TimedTextElement>?>(nameof(ItemsSource));
 
         /// <summary>
+        /// Defines the ChordSource property.
+        /// </summary>
+        public static readonly StyledProperty<IEnumerable<TimedChordElement>?> ChordSourceProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, IEnumerable<TimedChordElement>?>(nameof(ChordSource));
+
+        /// <summary>
+        /// Defines the ChordBrush property.
+        /// </summary>
+        public static readonly StyledProperty<IBrush?> ChordBrushProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, IBrush?>(nameof(ChordBrush), Brushes.Orange);
+
+        /// <summary>
+        /// Defines the ChordFontScale property.
+        /// </summary>
+        public static readonly StyledProperty<double> ChordFontScaleProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, double>(nameof(ChordFontScale), 0.45,
+                validate: value => value > 0.0 && value <= 1.0);
+
+        /// <summary>
         /// Defines the VisibleLinesCount property.
         /// </summary>
         public static readonly StyledProperty<int> VisibleLinesCountProperty =
@@ -80,6 +99,34 @@ namespace OwnKaraoke
         {
             get => GetValue(ItemsSourceProperty);
             set => SetValue(ItemsSourceProperty, value);
+        }
+
+        /// <summary>
+        /// Chords to hang above the lyrics. Leave it null and the display works exactly as
+        /// it did before — no chord row, no extra line height.
+        /// </summary>
+        public IEnumerable<TimedChordElement>? ChordSource
+        {
+            get => GetValue(ChordSourceProperty);
+            set => SetValue(ChordSourceProperty, value);
+        }
+
+        /// <summary>
+        /// Colour of the chord labels.
+        /// </summary>
+        public IBrush? ChordBrush
+        {
+            get => GetValue(ChordBrushProperty);
+            set => SetValue(ChordBrushProperty, value);
+        }
+
+        /// <summary>
+        /// Chord label size as a fraction of <see cref="FontSize"/>, 0–1.
+        /// </summary>
+        public double ChordFontScale
+        {
+            get => GetValue(ChordFontScaleProperty);
+            set => SetValue(ChordFontScaleProperty, value);
         }
 
         /// <summary>

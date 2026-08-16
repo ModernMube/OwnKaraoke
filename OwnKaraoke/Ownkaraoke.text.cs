@@ -85,7 +85,11 @@ namespace OwnKaraoke
         /// <summary>
         /// Clears the FormattedText cache to free memory.
         /// </summary>
-        private void ClearFormattedTextCache() => _formattedTextCache.Clear();
+        private void ClearFormattedTextCache()
+        {
+            _formattedTextCache.Clear();
+            _chordTextCache.Clear();
+        }
 
         #endregion
 
@@ -205,13 +209,17 @@ namespace OwnKaraoke
                 var lastSyllable = line.Syllables.Count > 0 ? line.Syllables[^1] : null;
                 line.LineWidth = lastSyllable != null ? lastSyllable.XOffsetInLine + lastSyllable.Width : 0;
 
+                AssignChords(line);
+                line.LineHeight += line.ChordRowHeight;
+
                 return line;
             }
 
             if (lineBreakEncountered)
             {
                 line.FormattedTextLine = GetOrCreateFormattedText("", Brushes.Transparent);
-                line.LineHeight = FontSize * 1.2;
+                line.ChordRowHeight = _chordRowHeight;
+                line.LineHeight = FontSize * 1.2 + _chordRowHeight;
                 line.LineWidth = 0;
                 line.LastSyllableGlobalIndex = line.FirstSyllableGlobalIndex;
 

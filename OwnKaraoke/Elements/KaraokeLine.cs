@@ -4,6 +4,22 @@ using System.Collections.Generic;
 namespace OwnKaraoke
 {
     /// <summary>
+    /// One chord label sitting above a line: where it goes inside the line, and the text
+    /// itself, measured once when the line is built.
+    /// </summary>
+    internal readonly struct ChordLabel
+    {
+        public readonly double X;
+        public readonly FormattedText Text;
+
+        public ChordLabel(double x, FormattedText text)
+        {
+            X = x;
+            Text = text;
+        }
+    }
+
+    /// <summary>
     /// Represents a line of karaoke text containing syllable metrics and formatting information.
     /// </summary>
     internal sealed class KaraokeLine
@@ -12,6 +28,17 @@ namespace OwnKaraoke
         /// Gets the collection of syllables in this line.
         /// </summary>
         public List<SyllableMetrics> Syllables { get; } = new(16);
+
+        /// <summary>
+        /// Chords hanging over this line, left to right.
+        /// </summary>
+        public List<ChordLabel> Chords { get; } = new(4);
+
+        /// <summary>
+        /// How much of <see cref="LineHeight"/> the chord row takes up on top. Zero when
+        /// there are no chords at all.
+        /// </summary>
+        public double ChordRowHeight { get; set; }
 
         /// <summary>
         /// Gets or sets the formatted text representation of the entire line.

@@ -175,6 +175,9 @@ namespace OwnKaraoke
         private void SubscribeToPropertyChanges()
         {
             this.GetObservable(ItemsSourceProperty).Subscribe(HandleItemsSourceChanged);
+            this.GetObservable(ChordSourceProperty).Subscribe(HandleChordSourceChanged);
+            this.GetObservable(ChordBrushProperty).Subscribe(_ => HandleChordStyleChanged());
+            this.GetObservable(ChordFontScaleProperty).Subscribe(_ => HandleChordStyleChanged());
 
             // Properties that require line rebuilding
             this.GetObservable(VisibleLinesCountProperty).Subscribe(_ => HandleVisualPropertyChanged());
