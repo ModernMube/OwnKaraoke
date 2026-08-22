@@ -8,7 +8,7 @@ A high-performance, cross-platform karaoke text display control for Avalonia UI 
 ## Features
 
 - **Syllable-level highlighting** - Progressive text highlighting synchronized with timing data
-- **Chord display** - Optional chord row above the lyrics, positioned over the syllable being sung
+- **Chord display** - Optional chord row above the lyrics, positioned at the beginning, middle or end of the syllable being sung
 - **Smooth scrolling animations** - Fluid line transitions with customizable animation speeds
 - **Real-time tempo control** - Adjust playback speed from -200% to +200% during playback
 - **External position mode** - Sync display to any external audio player by feeding the current position
@@ -115,7 +115,7 @@ KaraokeControl.Start();
 
 ## Chord Display
 
-The control can show a chord row above the lyrics. Chords are fed in through the `ChordSource` property as `TimedChordElement` records and each label is hung over the syllable that is being sung when the chord starts.
+The control can show a chord row above the lyrics. Chords are fed in through the `ChordSource` property as `TimedChordElement` records and each label is hung over the syllable that is being sung when the chord starts — at the beginning, the middle or the end of that syllable, depending on how far into it the chord falls.
 
 The feature is entirely opt-in: while `ChordSource` is `null` (or empty) there is no chord row and no extra line height, so the display behaves exactly as it did before.
 
@@ -147,6 +147,7 @@ KaraokeControl.Start();
 ### Positioning rules
 
 - A chord is drawn above the syllable that has already started at the chord's timestamp.
+- Every syllable offers three anchor points: its beginning, its middle and its end. The syllable's time span runs from its own start to the start of the next element, split into three; the chord is placed at whichever anchor its timestamp is closest to, so a chord sounding halfway through a word appears above the middle of that word.
 - Labels that would overlap are pushed to the right, keeping a small gap between them, instead of being drawn on top of each other.
 - A chord that started on an earlier line and is still sounding is repeated at the beginning of the next line, so the player always sees the current chord.
 - The chord row has the same height in every line, so the lyrics keep an even vertical rhythm.

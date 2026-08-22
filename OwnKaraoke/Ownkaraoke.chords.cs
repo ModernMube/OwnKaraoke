@@ -67,8 +67,9 @@ namespace OwnKaraoke
 
         /// <summary>
         /// Hangs every chord of this line's time span over the syllable being sung when it
-        /// starts. Labels that would collide are pushed right instead of drawn on top of
-        /// each other.
+        /// starts, at the beginning, the middle or the end of that syllable depending on how
+        /// far into it the chord falls. Labels that would collide are pushed right instead of
+        /// drawn on top of each other.
         /// </summary>
         private void AssignChords(KaraokeLine line)
         {
@@ -104,7 +105,12 @@ namespace OwnKaraoke
                     continue;
 
                 var text = GetOrCreateChordText(chord.Chord);
-                var x = syllable.XOffsetInLine;
+                var x = GetChordX(syllable, chord.StartTimeMs);
+
+                // An end-of-syllable anchor on the last word would hang the label off the line.
+                var rightmost = line.LineWidth - text.Width;
+                if (x > rightmost) x = rightmost > 0.0 ? rightmost : 0.0;
+
                 if (x < minX) x = minX;
 
                 line.Chords.Add(new ChordLabel(x, text));
@@ -163,6 +169,43 @@ namespace OwnKaraoke
             }
 
             return syllables.Count > 0 ? syllables[0] : null;
+        }
+
+        /// <summary>
+        /// Where the chord goes above the syllable. The syllable lasts until the next element
+        /// starts; that span is split into three, and the chord is drawn at whichever of the
+        /// three anchors — beginning, middle or end of the syllable — its time is closest to.
+        /// </summary>
+        private double GetChordX(SyllableMetrics syllable, double timeMs)
+        {
+            var start = syllable.OriginalElement.StartTimeMs;
+            var third = (GetSyllableEndTime(syllable) - start) / 3.0;
+
+            // Nothing to divide when the timings give the syllable no length of its own.
+            if (third <= 0.0)
+                return syllable.XOffsetInLine;
+
+            var elapsed = timeMs - start;
+
+            if (elapsed < third * 0.5)
+                return syllable.XOffsetInLine;
+
+            if (elapsed < third * 1.5)
+                return syllable.XOffsetInLine + syllable.Width * 0.5;
+
+            return syllable.XOffsetInLine + syllable.Width;
+        }
+
+        /// <summary>
+        /// When the syllable stops sounding: the moment the next element starts. The last
+        /// element of the source has no successor, so it is treated as having no length.
+        /// </summary>
+        private double GetSyllableEndTime(SyllableMetrics syllable)
+        {
+            var next = syllable.GlobalIndex + 1;
+            return next < _itemsSourceInternal.Count
+                ? _itemsSourceInternal[next].StartTimeMs
+                : syllable.OriginalElement.StartTimeMs;
         }
 
         private FormattedText GetOrCreateChordText(string chord)
