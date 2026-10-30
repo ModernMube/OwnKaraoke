@@ -35,6 +35,12 @@ namespace OwnKaraoke
                 validate: value => value > 0.0 && value <= 1.0);
 
         /// <summary>
+        /// Defines the KeepChordRowSpacing property.
+        /// </summary>
+        public static readonly StyledProperty<bool> KeepChordRowSpacingProperty =
+            AvaloniaProperty.Register<OwnKaraokeDisplay, bool>(nameof(KeepChordRowSpacing), false);
+
+        /// <summary>
         /// Defines the VisibleLinesCount property.
         /// </summary>
         public static readonly StyledProperty<int> VisibleLinesCountProperty =
@@ -127,6 +133,16 @@ namespace OwnKaraoke
         {
             get => GetValue(ChordFontScaleProperty);
             set => SetValue(ChordFontScaleProperty, value);
+        }
+
+        /// <summary>
+        /// Keeps the chord row's height even with no chords, so switching them off
+        /// doesn't pull the lines closer together.
+        /// </summary>
+        public bool KeepChordRowSpacing
+        {
+            get => GetValue(KeepChordRowSpacingProperty);
+            set => SetValue(KeepChordRowSpacingProperty, value);
         }
 
         /// <summary>

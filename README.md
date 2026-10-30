@@ -119,6 +119,8 @@ The control can show a chord row above the lyrics. Chords are fed in through the
 
 The feature is entirely opt-in: while `ChordSource` is `null` (or empty) there is no chord row and no extra line height, so the display behaves exactly as it did before.
 
+Switching chords off at runtime (setting `ChordSource` back to `null`) pulls the lines closer together by default. Set `KeepChordRowSpacing="True"` to keep the line spacing chords would need, just without the labels — handy when chords are toggled during a song and the lyrics shouldn't jump.
+
 ### Basic usage
 
 ```csharp
@@ -158,8 +160,9 @@ KaraokeControl.Start();
 |----------|-------------|
 | `ChordBrush` | Colour of the chord labels (default `Orange`) |
 | `ChordFontScale` | Label size as a fraction of `FontSize`, must be in the `0–1` range (default `0.45`) |
+| `KeepChordRowSpacing` | Keeps the chord row's height even without chords, so the line spacing doesn't change (default `false`) |
 
-Both properties can be changed at runtime; the lines are rebuilt automatically.
+All three properties can be changed at runtime; the lines are rebuilt automatically.
 
 ## External Position Mode
 
@@ -430,6 +433,7 @@ if (OwnKaraokeLyric.IsValidLrcFormat(content))
 | `FontStyle` | `FontStyle` | Inherited | Style of the font (Italic, Normal, etc.) |
 | `TextAlignment` | `TextAlignment` | `Left` | Horizontal alignment of text lines |
 | `ChordFontScale` | `double` | `0.45` | Chord label size relative to `FontSize` (0–1) |
+| `KeepChordRowSpacing` | `bool` | `false` | Reserve the chord row's height even when there are no chords |
 
 ### Color Properties
 

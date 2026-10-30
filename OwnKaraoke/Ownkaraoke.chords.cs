@@ -60,10 +60,11 @@ namespace OwnKaraoke
         }
 
         /// <summary>
-        /// Called once per line rebuild — the row is only as tall as the font asks for.
+        /// Called once per line rebuild — the row is only as tall as the font asks for, and
+        /// stays put without chords too when <see cref="KeepChordRowSpacing"/> says so.
         /// </summary>
         private void UpdateChordRowHeight() =>
-            _chordRowHeight = _chordsInternal.Count > 0 ? FontSize * ChordFontScale * 1.25 : 0.0;
+            _chordRowHeight = _chordsInternal.Count > 0 || KeepChordRowSpacing ? FontSize * ChordFontScale * 1.25 : 0.0;
 
         /// <summary>
         /// Hangs every chord of this line's time span over the syllable being sung when it
