@@ -484,6 +484,10 @@ namespace AvaloniaKaraoke.Views
         /// </summary>
         private void ChordToggle_Changed(object? sender, RoutedEventArgs e) => _applyChords();
 
+        // keep the chord row's gap with chords off
+        private void KeepSpacingToggle_Changed(object? sender, RoutedEventArgs e) =>
+            KaraokeControl.KeepChordRowSpacing = KeepSpacingToggle.IsChecked == true;
+
         /// <summary>
         /// Gets the lyrics for "Hallelujah" by Leonard Cohen.
         /// </summary>

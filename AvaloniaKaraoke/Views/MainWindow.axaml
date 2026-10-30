@@ -114,6 +114,13 @@
                       VerticalAlignment="Center"
                       IsCheckedChanged="ChordToggle_Changed"/>
 
+			<CheckBox Name="KeepSpacingToggle"
+                      Content="Keep line spacing"
+                      IsChecked="False"
+                      FontSize="14"
+                      VerticalAlignment="Center"
+                      IsCheckedChanged="KeepSpacingToggle_Changed"/>
+
 		</StackPanel>
 
 		<!-- Tempo Controls -->
